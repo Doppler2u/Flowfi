@@ -1,0 +1,136 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  --bg-page: #0a0a0a;
+  --bg-card: #111;
+  --border-main: #2a2a2a;
+  --text-main: #f0f0f0;
+  --text-dim: #888;
+  --input-bg: #111;
+  --input-border: #333;
+  --tooltip-bg: #0a0a0a;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --bg-page: #f2f2f2;
+  --bg-card: #ffffff;
+  --border-main: #000000;
+  --text-main: #000000;
+  --text-dim: #555;
+  --input-bg: #fff;
+  --input-border: #000;
+  --tooltip-bg: #fff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-page);
+  color: var(--text-main);
+  font-family: 'Space Grotesk', sans-serif;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* Brutalism scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #FFE600 #1a1a1a;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: #1a1a1a; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background-color: #FFE600; border-radius: 0; }
+
+/* Brutalist input */
+.brut-input {
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
+  color: var(--text-main);
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  padding: 10px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.1s;
+}
+.brut-input:focus { border-color: #FFE600; }
+.brut-input::placeholder { color: var(--text-dim); }
+.brut-input:disabled { opacity: 0.4; cursor: not-allowed; }
+.brut-input.error { border-color: #FF3B3B; color: #FF3B3B; }
+
+/* Brutalist button */
+.brut-btn {
+  border: 2px solid currentColor;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.brut-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.brut-btn-green  { background: #00FF87; color: #000; border-color: #00FF87; }
+.brut-btn-green:not(:disabled):hover  { background: #000; color: #00FF87; }
+
+.brut-btn-red    { background: #FF3B3B; color: #000; border-color: #FF3B3B; }
+.brut-btn-red:not(:disabled):hover    { background: #000; color: #FF3B3B; }
+
+.brut-btn-yellow { background: #FFE600; color: #000; border-color: #FFE600; }
+.brut-btn-yellow:not(:disabled):hover { background: #000; color: #FFE600; }
+
+.brut-btn-cyan   { background: #00D9FF; color: #000; border-color: #00D9FF; }
+.brut-btn-cyan:not(:disabled):hover   { background: #000; color: #00D9FF; }
+
+.brut-btn-blue   { background: #4D7FFF; color: #fff; border-color: #4D7FFF; }
+.brut-btn-blue:not(:disabled):hover   { background: #000; color: #4D7FFF; }
+
+.brut-btn-white  { background: #f0f0f0; color: #000; border-color: #f0f0f0; }
+.brut-btn-white:not(:disabled):hover  { background: #000; color: #f0f0f0; }
+
+/* Brutalist card */
+.brut-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border-main);
+  padding: 20px;
+}
+
+/* Brutalist section title */
+.brut-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Noise texture overlay */
+.brut-noise {
+  position: relative;
+}
+.brut-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
