@@ -1,116 +1,89 @@
-# FlowFi — Brutalist Programmable Payment Hub
+# FlowFi 🌊
+### High-Performance Content Marketplace & Programmable Payment Hub
+
+**FlowFi** is a decentralized platform built on the **Arc Network**, designed for seamless content monetization and deep-history asset recovery. It combines a **Refined Brutalist UI** with a robust "Bulletproof" indexing logic that ensures data integrity where standard RPCs often fail.
 
 ![FlowFi Dashboard](./frontend/public/screenshot.png)
 
-> A high-impact, polished smart contract + web dashboard deployed on **Arc Testnet** (Circle's Layer-1 blockchain).
+---
 
-FlowFi combines **pay-to-access content**, **usage-based credit spending**, and **advanced split payment routing** into a single on-chain payment hub, now featuring **native cross-chain liquidity bridging** via Circle App Kit and **Dual Theme support**.
+## 🏆 Hackathon Highlights (Why FlowFi?)
+
+### 1. 🛡️ Bulletproof Sync Engine
+Most dApps rely on fragile RPC indexing that often breaks due to block limits or node latency. FlowFi implements a **Custom Sequential Block Scanner**:
+- **Micro-Chunking**: Traverses history in 1,000-block segments for maximum RPC compatibility.
+- **Race Condition Shield**: Implements a 10-block safety buffer to handle out-of-sync nodes in a load-balanced cluster.
+- **Raw Log Decoding**: Uses low-level `decodeEventLog` with manual hex-encoding to bypass standard middleware issues.
+
+### 2. 🎨 Refined Brutalist UX
+A visual identity that matches the precision of the code:
+- **Zero-Radius Design**: Stark, hard edges and thick borders for high-impact readability.
+- **Dual-Theme Engine**: Sleek **Dark Mode** and high-contrast **Newsprint Light Mode**.
+- **Diagnostic Activity Log**: Real-time system feedback providing transparency into the on-chain scanning process.
+
+### 3. 💳 Advanced Payment Lifecycle
+- **Native USDC Core**: All payments and balances use native USDC on Arc.
+- **Circle App Kit Integration**: Seamlessly bridge liquidity from Ethereum Sepolia via CCTP (Circle App Kit + Viem Adapter).
+- **Atomic Unlocking**: Content secrets are crytographically gated until the on-chain payment is confirmed.
 
 ---
 
-## 🎨 Design Philosophy: Refined Brutalism
-FlowFi utilizes a **Refined Brutalist Design System** characterized by stark functionality and high visual impact:
-- **🌓 Dual Theme Support**: Seamlessly toggle between a sleek **Dark Mode** and a high-contrast **Light Mode** (Newsprint style).
-- **Hard Edges**: Zero border-radius; thick, unyielding borders.
-- **Contextual Documentation**: Integrated **Toolkit Icons** (InfoTooltips) across every tile to explain complex on-chain logic in plain English.
-- **Data-First Typography**: `Space Grotesk` for headings and `Space Mono` for all data fields and inputs.
+## 🚀 Technical Stack
+
+- **L1 Blockchain**: Arc Testnet (Circle L1)
+- **Frontend**: Next.js 15 (App Router), Tailwind CSS v4
+- **Web3 Library**: Viem v2, Wagmi
+- **Liquidity**: Circle App Kit (CCTP Native Bridge)
+- **Design**: Refined Brutalism (Space Grotesk & Space Mono)
 
 ---
 
-## 🚀 Live Deployment
+## 📦 Key Use Cases
 
-| Detail | Value |
-|---|---|
-| **Network** | Arc Testnet |
-| **Chain ID** | `5042002` |
-| **Contract** | [`0x392ea3e652f436583514c2aa62761a558c6af9b0`](https://testnet.arcscan.app/address/0x392ea3e652f436583514c2aa62761a558c6af9b0) |
-| **Explorer** | [testnet.arcscan.app](https://testnet.arcscan.app) |
-| **RPC** | `https://rpc.testnet.arc.network` |
+- **Pay-Per-View Content**: Creators sell Articles, Videos, and Code Snippets directly to users.
+- **Deep History Recovery**: The "Rescue Scan" feature allows users to recover assets registered months ago by traversing up to 200,000 blocks.
+- **Liquid Finance**: Real-time contract balance management for instant service payments.
 
 ---
 
-## ✨ Key Features & Real-World Use Cases
+## 🛠️ Local Setup
 
-### 🌉 Liquidity Bridge (Circle App Kit)
-Seamlessly transfer native USDC liquidity from **Ethereum Sepolia** directly into your **Arc Testnet** account via Circle CCTP.
-- **Native Wallet Integration**: Connect MetaMask and bridge in one click.
-- **1:1 Native Swaps**: Burn-and-mint mechanism ensures zero slippage and preserved value.
-
-### 📦 Content Marketplace
-An atomic pay-to-access marketplace for digital assets.
-- **Registry & Library**: Creators register content; users unlock it using their contract balance.
-- **Atomic Access**: On-chain verification ensures access is only granted upon successful USDC payment.
-- **Experimental Guardrails**: Built-in advisory for decentralized arbitration strategies.
-
-### 🔀 Programmable Routing & Usage
-- **Usage Credits**: Developers can deduct credits for API calls or on-chain services.
-  - *Use Cases*: AI Agent prompts, SaaS usage-based billing, Premium API keys.
-- **Payment Router**: Split payments atomically between multiple recipients with configurable percentage splits.
-  - *Use Cases*: Revenue sharing, automated tax withholding, affiliate payouts.
-
----
-
-## 🔧 Tech Stack
-
-**Smart Contract (Foundry Environment)**
-- Solidity `^0.8.20`
-- Foundry (forge, cast, anvil)
-
-**Frontend (Next.js Framework)**
-- **UI**: Next.js (App Router), Tailwind CSS v4, Lucide React
-- **Integration**: Viem v2, Wagmi
-- **Circle SDKs**: `@circle-fin/app-kit`, `@circle-fin/adapter-viem-v2`
-
----
-
-## 🛠️ Local Development
-
-### Prerequisites
-- [Foundry](https://getfoundry.sh/) (via WSL on Windows)
-- Node.js 22+
-- MetaMask browser extension
-
-### Smart Contract
+### 1. Smart Contract
+Ensure you have [Foundry](https://getfoundry.sh/) installed.
 ```bash
-# Navigate to project
-cd flowfi
-
-# Build
+# Build contracts
 forge build
 
-# Run tests
+# Test logic
 forge test -vvv
 ```
 
-### Frontend
+### 2. Frontend
 ```bash
 cd frontend
 
 # Install dependencies
 npm install
 
-# Start development server
+# Configure environment
+# Create .env.local with:
+# NEXT_PUBLIC_CONTRACT_ADDRESS=0x392ea3e652f436583514c2aa62761a558c6af9b0
+
+# Run development server
 npm run dev
-# → http://localhost:3000
 ```
 
 ---
 
-## ⚙️ Environment Variables
+## 📡 Deployment Data
 
-### Smart Contract (`.env` in root)
-```ini
-ARC_TESTNET_RPC_URL="https://rpc.testnet.arc.network"
-PRIVATE_KEY="your_private_key"
-```
-
-### Frontend (`frontend/.env.local`)
-```ini
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x392ea3e652f436583514c2aa62761a558c6af9b0
-```
+- **Chain ID**: `5042002` (Arc Testnet)
+- **Contract Address**: `0x392ea3e652f436583514c2aa62761a558c6af9b0`
+- **Explorer**: [testnet.arcscan.app](https://testnet.arcscan.app)
+- **Vercel Demo**: [flowfi-three.vercel.app](https://flowfi-three.vercel.app/)
 
 ---
 
 ## 📜 License
 
-MIT
+MIT © 2026 FlowFi Team
