@@ -111,48 +111,61 @@ export default function ContentMarketplace() {
       fetchGallery();
     }
   }, [activeTab, publicClient, address, isConnected]);
+  
+  const DEPLOYMENT_BLOCK = 36104400n;
+  const CHUNK_SIZE = 9500n;
 
   const [isDeepScanning, setIsDeepScanning] = useState(false);
   
-  const fetchGallery = async (customLookback?: bigint) => {
+  const fetchGallery = async (targetBlocks?: bigint) => {
     if (!publicClient) return;
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      const lookback = customLookback || 9500n;
-      const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
-      
-      addLog({ type: "info", message: `Protocol Scan: Analyzing last ${lookback.toString()} blocks...` });
-      
-      const logs = await publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        fromBlock,
-        toBlock: currentBlock,
-      });
+      const lookbackLimit = targetBlocks || (15000n); // Default lookback ~30k blocks
+      const stopBlock = currentBlock > lookbackLimit ? currentBlock - lookbackLimit : DEPLOYMENT_BLOCK;
+      const finalStopBlock = stopBlock < DEPLOYMENT_BLOCK ? DEPLOYMENT_BLOCK : stopBlock;
 
-      addLog({ type: "info", message: `Found ${logs.length} raw signatures. Decoding...` });
-
+      let currentTo = currentBlock;
       const uniqueEvents = new Map();
-      for (const log of logs) {
-        try {
-          const decoded = decodeEventLog({
-            abi: FlowFiABI,
-            data: log.data,
-            topics: log.topics,
-          });
-          
-          if (decoded.eventName === "ContentCreated") {
-            const args = decoded.args as any;
-            const id = args.contentId ?? args.id;
-            if (id !== undefined) {
-              uniqueEvents.set(id.toString(), args);
+      
+      addLog({ type: "info", message: `Initiating Protocol Scan back to block ${finalStopBlock}...` });
+
+      while (currentTo > finalStopBlock) {
+        const currentFrom = currentTo > CHUNK_SIZE ? currentTo - CHUNK_SIZE : finalStopBlock;
+        const scanFrom = currentFrom < finalStopBlock ? finalStopBlock : currentFrom;
+
+        const logs = await publicClient.getLogs({
+          address: CONTRACT_ADDRESS,
+          fromBlock: scanFrom,
+          toBlock: currentTo,
+        });
+
+        for (const log of logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: FlowFiABI,
+              data: log.data,
+              topics: log.topics,
+            });
+            
+            if (decoded.eventName === "ContentCreated") {
+              const args = decoded.args as any;
+              const id = args.contentId ?? args.id;
+              if (id !== undefined) {
+                uniqueEvents.set(id.toString(), args);
+              }
             }
-          }
-        } catch (e) {}
+          } catch (e) {}
+        }
+        
+        currentTo = scanFrom;
+        if (logs.length > 0) {
+          addLog({ type: "info", message: `Found ${uniqueEvents.size} unique assets...` });
+        }
       }
 
       const items: GalleryItem[] = [];
-
       for (const args of uniqueEvents.values()) {
         const id = (args.contentId ?? args.id) as bigint;
         const creator = (args.creator ?? args.owner) as string;
@@ -193,6 +206,7 @@ export default function ContentMarketplace() {
       }
 
       setGalleryItems(items.reverse());
+      addLog({ type: "info", message: `Scan Complete: ${items.length} assets recovered.` });
     } catch (e: any) {
       console.error("Gallery fetch error:", e);
       addLog({ type: "error", message: `Scanner Error: ${e.message?.slice(0, 100)}...` });
@@ -206,9 +220,8 @@ export default function ContentMarketplace() {
     setIsDeepScanning(true);
     addLog({ type: "info", message: "Starting Deep Rescue Scan (100,000 blocks)..." });
     try {
-      // For hackathon simplicity, we perform one larger jump if the RPC allows, 
-      // or sequential chunks. Here we do a 40k block leap which some Arc nodes tolerate.
-      await fetchGallery(40000n);
+    // Full history scan (approx 150k blocks)
+    await fetchGallery(200000n);
       addLog({ type: "info", message: "Deep Scan Complete." });
     } catch (e) {
       addLog({ type: "error", message: "Deep Scan failed. Network busy." });
