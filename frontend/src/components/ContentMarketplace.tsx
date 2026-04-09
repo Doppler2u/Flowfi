@@ -117,8 +117,8 @@ export default function ContentMarketplace() {
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      // Increase lookback to 50,000 blocks to ensure early hackathon content stays visible
-      const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+      // Reduced lookback to 5,000 blocks to comply with Arc RPC limits while keeping recent content visible
+      const fromBlock = currentBlock > 5000n ? currentBlock - 5000n : 0n;
       
       const logs = await publicClient.getContractEvents({
         address: CONTRACT_ADDRESS,
