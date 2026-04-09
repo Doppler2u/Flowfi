@@ -21,6 +21,8 @@ frontend/out/
 # Logs
 *.log
 npm-debug.log*
+frontend/build_log.txt
+frontend/lint_out.txt
 
 # OS files
 .DS_Store
