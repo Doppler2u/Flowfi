@@ -196,18 +196,17 @@ export default function ContentMarketplace() {
       const id = BigInt(createId);
       const price = parseUnits(createPrice, 18);
       
-      const { request } = await publicClient.simulateContract({
+      addLog({ type: "info", message: `Please confirm content #${createId} registration in MetaMask...` });
+      
+      const hash = await walletClient.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FlowFiABI,
         functionName: "createContent",
         args: [id, price],
         account: address,
-        gas: 250000n, // Explicit gas safety margin for Arc Testnet
+        gas: 300000n, // Bypassing brittle Arc RPC simulation with manual gas
       });
 
-      addLog({ type: "info", message: `Please confirm content #${createId} registration in MetaMask...` });
-      
-      const hash = await walletClient.writeContract(request);
       addLog({ type: "info", message: `Transaction submitted! Hash: ${hash}` });
       
       await publicClient.waitForTransactionReceipt({ hash });
@@ -239,20 +238,19 @@ export default function ContentMarketplace() {
     if (!walletClient || !publicClient) return;
     setUnlockingId(id);
     try {
-      const { request } = await publicClient.simulateContract({
+      addLog({ type: "info", message: `Confirm unlock for content #${id.toString()} in MetaMask...` });
+
+      const hash = await walletClient.writeContract({
         address: CONTRACT_ADDRESS,
         abi: FlowFiABI,
         functionName: "unlockContent",
         args: [id],
         account: address,
-        gas: 200000n, // Explicit gas margin
+        gas: 250000n, // Bypassing brittle Arc RPC simulation with manual gas
       });
 
-      addLog({ type: "info", message: `Confirm unlock for content #${id.toString()} in MetaMask...` });
-      
-      const hash = await walletClient.writeContract(request);
-      addLog({ type: "info", message: `Unlock transaction submitted! Hash: ${hash}` });
-      
+      addLog({ type: "info", message: `Unlocking... Hash: ${hash}` });
+
       await publicClient.waitForTransactionReceipt({ hash });
       addLog({ type: "info", message: `Successfully unlocked content #${id.toString()}! View it in My Library.` });
       
