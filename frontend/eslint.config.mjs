@@ -10,7 +10,14 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Aggressively sanitize the Next.js/Typescript config objects to remove
+  // the 'name' property that ESLint 9's strict validation rejects.
+  ...compat.extends("next/core-web-vitals", "next/typescript").map((config) => {
+    if (config.name) {
+      delete config.name;
+    }
+    return config;
+  }),
 ];
 
 export default eslintConfig;

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { createPublicClient, createWalletClient, custom, http, formatUnits, parseUnits, PublicClient, WalletClient } from "viem";
 import { FlowFiABI, CONTRACT_ADDRESS } from "@/lib/abi";
 
-const ARC_TESTNET = {
+export const ARC_TESTNET = {
   id: 5042002,
   name: "Arc Testnet",
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },

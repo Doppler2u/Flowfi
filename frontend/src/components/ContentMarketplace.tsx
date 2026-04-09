@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useWeb3 } from "../context/Web3Provider";
+import { useWeb3, ARC_TESTNET } from "@/context/Web3Provider";
 import { FlowFiABI } from "../lib/abi";
 import { parseUnits } from "viem";
 import { 
@@ -204,6 +204,7 @@ export default function ContentMarketplace() {
         functionName: "createContent",
         args: [id, price],
         account: address,
+        chain: ARC_TESTNET as any, // satisfies viem strict typing
         gas: 300000n, // Bypassing brittle Arc RPC simulation with manual gas
       });
 
@@ -246,6 +247,7 @@ export default function ContentMarketplace() {
         functionName: "unlockContent",
         args: [id],
         account: address,
+        chain: ARC_TESTNET as any, // satisfies viem strict typing
         gas: 250000n, // Bypassing brittle Arc RPC simulation with manual gas
       });
 
