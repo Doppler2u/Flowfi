@@ -71,12 +71,12 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   const setupClients = useCallback(async (addr: `0x${string}`) => {
     const pub = createPublicClient({ chain: ARC_TESTNET as any, transport: http() });
     const wallet = createWalletClient({ account: addr, chain: ARC_TESTNET as any, transport: custom(window.ethereum!) });
-    setPublicClient(pub);
-    setWalletClient(wallet);
+    setPublicClient(pub as any);
+    setWalletClient(wallet as any);
     return { pub, wallet };
   }, []);
 
-  const fetchBalances = useCallback(async (addr: `0x${string}`, pub: ReturnType<typeof createPublicClient>) => {
+  const fetchBalances = useCallback(async (addr: `0x${string}`, pub: any) => {
     try {
       const [contractBal, nativeBal] = await Promise.all([
         pub.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "balances", args: [addr] }) as Promise<bigint>,
