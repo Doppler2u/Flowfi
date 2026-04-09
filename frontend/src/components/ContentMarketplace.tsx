@@ -315,47 +315,45 @@ export default function ContentMarketplace() {
       )}
 
       {/* Header & Tabs */}
-      <div className="shrink-0 space-y-5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-5">
-          <div className="flex flex-col items-start gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-2 w-full justify-between sm:justify-start">
-              <h2 className="text-sm font-black text-[var(--text-main)] uppercase leading-tight font-sans">
-                CONTENT<br/>MARKETPLACE
-              </h2>
-              <InfoTooltip 
-                title="Decentralized Storefront"
-                content="A DIGITAL ASSET HUB WHERE CREATORS SELL ACCESS TO 'SECRETS' (LINKS, KEYS, CODE). PAYMENTS ESCROW AUTOMATICALLY ON-CHAIN, REVEALING CONTENT ONLY TO AUTHORIZED BUYERS."
-              />
-            </div>
-            <button
-              onClick={() => setShowWarning(true)}
-              className="flex items-center gap-1.5 px-3 py-1 bg-[#FFE600] text-black text-[10px] font-black uppercase border-2 border-[#FFE600] hover:bg-black hover:text-[#FFE600] transition-all"
-            >
-              <AlertTriangle size={12} />
-              Experimental
-            </button>
+      <div className="shrink-0 space-y-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-black text-[var(--text-main)] uppercase leading-tight font-sans">
+              CONTENT<br/>MARKETPLACE
+            </h2>
+            <InfoTooltip 
+              title="Decentralized Storefront"
+              content="A DIGITAL ASSET HUB WHERE CREATORS SELL ACCESS TO 'SECRETS' (LINKS, KEYS, CODE). PAYMENTS ESCROW AUTOMATICALLY ON-CHAIN, REVEALING CONTENT ONLY TO AUTHORIZED BUYERS."
+            />
           </div>
-          
-          <div className="flex border-2 border-[var(--border-main)] w-full sm:w-auto overflow-x-auto scrollbar-none shrink-0">
-            <button
-              onClick={() => setActiveTab("gallery")}
-              className={`flex-1 sm:flex-none px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === "gallery" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
-            >
-              Gallery
-            </button>
-            <button
-              onClick={() => setActiveTab("my-content")}
-              className={`flex-1 sm:flex-none px-3 py-2 text-[10px] font-black uppercase tracking-widest border-x-2 border-[var(--border-main)] transition-all whitespace-nowrap ${activeTab === "my-content" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
-            >
-              Library
-            </button>
-            <button
-              onClick={() => setActiveTab("create")}
-              className={`flex-1 sm:flex-none px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === "create" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
-            >
-              Register
-            </button>
-          </div>
+          <button
+            onClick={() => setShowWarning(true)}
+            className="flex items-center gap-1.5 px-3 py-1 bg-[#FFE600] text-black text-[10px] font-black uppercase border-2 border-[#FFE600] hover:bg-black hover:text-[#FFE600] transition-all w-fit"
+          >
+            <AlertTriangle size={12} />
+            Experimental
+          </button>
+        </div>
+        
+        <div className="flex border-2 border-[var(--border-main)] w-full overflow-x-auto scrollbar-none shrink-0">
+          <button
+            onClick={() => setActiveTab("gallery")}
+            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === "gallery" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+          >
+            Gallery
+          </button>
+          <button
+            onClick={() => setActiveTab("my-content")}
+            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest border-x-2 border-[var(--border-main)] transition-all whitespace-nowrap ${activeTab === "my-content" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+          >
+            Library
+          </button>
+          <button
+            onClick={() => setActiveTab("create")}
+            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === "create" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+          >
+            Register
+          </button>
         </div>
         <div className="border-b-2 border-[var(--border-main)] w-full" />
       </div>

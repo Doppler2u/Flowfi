@@ -7,6 +7,7 @@ import AppKitBridge from "@/components/AppKitBridge";
 import UsagePanel from "@/components/UsagePanel";
 import ActivityLog from "@/components/ActivityLog";
 import ThemeToggle from "@/components/ThemeToggle";
+import { FlowFiABI, CONTRACT_ADDRESS } from "@/lib/abi";
 import { HelpCircle } from "lucide-react";
 import InfoTooltip from "@/components/InfoTooltip";
 import { useWeb3 } from "@/context/Web3Provider";
@@ -63,7 +64,7 @@ export default function Home() {
             {[
               { label: "Network", value: "Arc Testnet", color: "#00FF87" },
               { label: "Chain ID", value: "5042002", color: "var(--text-main)" },
-              { label: "Contract", value: `${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS?.slice(0,8)}...`, color: "#FFE600" },
+              { label: "Contract", value: `${CONTRACT_ADDRESS.slice(0,8)}...`, color: "#FFE600" },
               { label: "FlowFi Balance", value: `${parseFloat(contractBalance).toFixed(4)} USDC`, color: "#00D9FF" },
             ].map((stat, i) => (
               <div key={stat.label} className={`px-4 py-3 bg-[var(--bg-card)] ${i < 3 ? "border-r-2 border-[var(--border-main)]" : ""}`}>

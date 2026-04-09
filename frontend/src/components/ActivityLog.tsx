@@ -25,7 +25,7 @@ export default function ActivityLog() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-3 font-mono">
+      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin space-y-3 font-mono max-h-[340px]">
         {logs.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-20">
             <Clock size={32} className="mb-2" />
