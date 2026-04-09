@@ -127,19 +127,28 @@ export default function ContentMarketplace() {
       const finalStopBlock = stopBlock < DEPLOYMENT_BLOCK ? DEPLOYMENT_BLOCK : stopBlock;
 
       let currentTo = currentBlock;
+      let isFirstChunk = true;
       const uniqueEvents = new Map();
       
-      addLog({ type: "info", message: `Initiating Protocol Scan back to block ${finalStopBlock}...` });
+      addLog({ type: "info", message: `Protocol Scan: Syncing history to block ${finalStopBlock}...` });
 
       while (currentTo > finalStopBlock) {
         const currentFrom = currentTo > CHUNK_SIZE ? currentTo - CHUNK_SIZE : finalStopBlock;
         const scanFrom = currentFrom < finalStopBlock ? finalStopBlock : currentFrom;
 
+        // Skip if the range is invalid
+        if (scanFrom >= currentTo && !isFirstChunk) break;
+
+        // Use 'latest' for the first chunk to avoid race conditions with out-of-sync RPC nodes
         const logs = await publicClient.getLogs({
           address: CONTRACT_ADDRESS,
           fromBlock: scanFrom,
-          toBlock: currentTo,
+          toBlock: isFirstChunk ? 'latest' : currentTo,
         });
+
+        if (isFirstChunk) {
+          addLog({ type: "info", message: `[DEBUG] Scanner start: ${scanFrom.toString()} to LATEST` });
+        }
 
         for (const log of logs) {
           try {
