@@ -117,8 +117,10 @@ export default function ContentMarketplace() {
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      // Reduced lookback to 5,000 blocks to comply with Arc RPC limits while keeping recent content visible
-      const fromBlock = currentBlock > 5000n ? currentBlock - 5000n : 0n;
+      // Maximizing lookback to the RPC limit of ~10,000 blocks
+      const fromBlock = currentBlock > 9500n ? currentBlock - 9500n : 0n;
+      
+      addLog({ type: "info", message: `Searching blockchain for assets (last 9,500 blocks)...` });
       
       const logs = await publicClient.getContractEvents({
         address: CONTRACT_ADDRESS,
@@ -128,10 +130,12 @@ export default function ContentMarketplace() {
         toBlock: currentBlock,
       });
 
+      addLog({ type: "info", message: `Scanning ${logs.length} raw blockchain logs...` });
+
       const uniqueEvents = new Map();
       for (const log of logs) {
-        // Support both naming conventions (id vs contentId) for maximum compatibility
-        const id = log.args.contentId ?? (log.args as any).id;
+        // Aggressive mapping to handle id vs contentId vs id variations
+        const id = log.args.contentId ?? (log.args as any).id ?? (log.args as any).id;
         if (id !== undefined) {
           uniqueEvents.set(id.toString(), log.args);
         }
@@ -140,9 +144,9 @@ export default function ContentMarketplace() {
       const items: GalleryItem[] = [];
 
       for (const args of uniqueEvents.values()) {
-        const id = args.contentId as bigint;
-        const creator = args.creator as string;
-        const price = args.price as bigint;
+        const id = (args.contentId ?? (args as any).id) as bigint;
+        const creator = (args.creator ?? (args as any).owner ?? (args as any).creator) as string;
+        const price = (args.price ?? (args as any).cost) as bigint;
 
         let hasAccess = false;
         if (address) {
