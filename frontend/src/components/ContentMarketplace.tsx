@@ -117,7 +117,8 @@ export default function ContentMarketplace() {
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      const fromBlock = currentBlock > 9000n ? currentBlock - 9000n : 0n;
+      // Increase lookback to 50,000 blocks to ensure early hackathon content stays visible
+      const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
       
       const logs = await publicClient.getContractEvents({
         address: CONTRACT_ADDRESS,
@@ -176,8 +177,9 @@ export default function ContentMarketplace() {
       }
 
       setGalleryItems(items.reverse());
-    } catch (e) {
+    } catch (e: any) {
       console.error("Gallery fetch error:", e);
+      addLog({ type: "error", message: `Failed to scan for content: ${e.message?.slice(0, 100)}...` });
     } finally {
       setLoadingGallery(false);
     }
