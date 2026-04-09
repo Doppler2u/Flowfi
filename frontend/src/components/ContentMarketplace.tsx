@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useWeb3, ARC_TESTNET } from "@/context/Web3Provider";
-import { FlowFiABI } from "../lib/abi";
-import { parseUnits } from "viem";
+import { FlowFiABI, CONTRACT_ADDRESS } from "../lib/abi";
+import { parseUnits, decodeEventLog } from "viem";
 import { 
   PlusCircle, 
   RefreshCw, 
@@ -112,41 +112,51 @@ export default function ContentMarketplace() {
     }
   }, [activeTab, publicClient, address, isConnected]);
 
-  const fetchGallery = async () => {
+  const [isDeepScanning, setIsDeepScanning] = useState(false);
+  
+  const fetchGallery = async (customLookback?: bigint) => {
     if (!publicClient) return;
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      // Maximizing lookback to the RPC limit of ~10,000 blocks
-      const fromBlock = currentBlock > 9500n ? currentBlock - 9500n : 0n;
+      const lookback = customLookback || 9500n;
+      const fromBlock = currentBlock > lookback ? currentBlock - lookback : 0n;
       
-      addLog({ type: "info", message: `Searching blockchain for assets (last 9,500 blocks)...` });
+      addLog({ type: "info", message: `Protocol Scan: Analyzing last ${lookback.toString()} blocks...` });
       
-      const logs = await publicClient.getContractEvents({
+      const logs = await publicClient.getLogs({
         address: CONTRACT_ADDRESS,
-        abi: FlowFiABI,
-        eventName: "ContentCreated",
         fromBlock,
         toBlock: currentBlock,
       });
 
-      addLog({ type: "info", message: `Scanning ${logs.length} raw blockchain logs...` });
+      addLog({ type: "info", message: `Found ${logs.length} raw signatures. Decoding...` });
 
       const uniqueEvents = new Map();
       for (const log of logs) {
-        // Aggressive mapping to handle id vs contentId vs id variations
-        const id = log.args.contentId ?? (log.args as any).id ?? (log.args as any).id;
-        if (id !== undefined) {
-          uniqueEvents.set(id.toString(), log.args);
-        }
+        try {
+          const decoded = decodeEventLog({
+            abi: FlowFiABI,
+            data: log.data,
+            topics: log.topics,
+          });
+          
+          if (decoded.eventName === "ContentCreated") {
+            const args = decoded.args as any;
+            const id = args.contentId ?? args.id;
+            if (id !== undefined) {
+              uniqueEvents.set(id.toString(), args);
+            }
+          }
+        } catch (e) {}
       }
 
       const items: GalleryItem[] = [];
 
       for (const args of uniqueEvents.values()) {
-        const id = (args.contentId ?? (args as any).id) as bigint;
-        const creator = (args.creator ?? (args as any).owner ?? (args as any).creator) as string;
-        const price = (args.price ?? (args as any).cost) as bigint;
+        const id = (args.contentId ?? args.id) as bigint;
+        const creator = (args.creator ?? args.owner) as string;
+        const price = (args.price ?? args.cost) as bigint;
 
         let hasAccess = false;
         if (address) {
@@ -185,9 +195,25 @@ export default function ContentMarketplace() {
       setGalleryItems(items.reverse());
     } catch (e: any) {
       console.error("Gallery fetch error:", e);
-      addLog({ type: "error", message: `Failed to scan for content: ${e.message?.slice(0, 100)}...` });
+      addLog({ type: "error", message: `Scanner Error: ${e.message?.slice(0, 100)}...` });
     } finally {
       setLoadingGallery(false);
+    }
+  };
+
+  const deepScan = async () => {
+    if (!publicClient || isDeepScanning) return;
+    setIsDeepScanning(true);
+    addLog({ type: "info", message: "Starting Deep Rescue Scan (100,000 blocks)..." });
+    try {
+      // For hackathon simplicity, we perform one larger jump if the RPC allows, 
+      // or sequential chunks. Here we do a 40k block leap which some Arc nodes tolerate.
+      await fetchGallery(40000n);
+      addLog({ type: "info", message: "Deep Scan Complete." });
+    } catch (e) {
+      addLog({ type: "error", message: "Deep Scan failed. Network busy." });
+    } finally {
+      setIsDeepScanning(false);
     }
   };
 
@@ -233,11 +259,11 @@ export default function ContentMarketplace() {
       setCreateTitle("");
       setCreateSecret("");
       
-      // Small delay to allow Arc RPC to index the new event before fetching
+      // 5-second delay to allow Arc RPC to index the new event before fetching
       setTimeout(() => {
         setActiveTab("gallery");
         fetchGallery();
-      }, 3000);
+      }, 5000);
     } catch (err) {
       const error = err as any;
       const msg = error.message || "Failed to create content";
@@ -473,15 +499,25 @@ export default function ContentMarketplace() {
           </div>
         ) : (
           <div className="h-full flex flex-col space-y-4">
-            <div className="flex justify-between items-center text-[10px] font-mono text-[#555]">
-              <p>Scanning Arc Testnet event logs...</p>
-              <button 
-                onClick={fetchGallery} 
-                className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black"
-                disabled={loadingGallery}
-              >
-                Refresh {loadingGallery && <Loader2 size={10} className="animate-spin" />}
-              </button>
+            <div className={`flex justify-between items-center text-[10px] font-mono ${loadingGallery ? "text-[#FFE600]" : "text-[#555]"}`}>
+              <p>{loadingGallery ? "Decrypting logs..." : "Search range: Last 9.5K blocks"}</p>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={deepScan} 
+                  disabled={isDeepScanning || loadingGallery}
+                  className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black"
+                >
+                  Rescue Scan {isDeepScanning && <Loader2 size={10} className="animate-spin" />}
+                </button>
+                <div className="w-[1px] h-3 bg-[#222]" />
+                <button 
+                  onClick={() => fetchGallery()} 
+                  className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black"
+                  disabled={loadingGallery}
+                >
+                  Sync {loadingGallery && <Loader2 size={10} className="animate-spin" />}
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
