@@ -69,12 +69,27 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setupClients = useCallback(async (addr: `0x${string}`) => {
-    const pub = createPublicClient({ chain: ARC_TESTNET as any, transport: http() });
-    const wallet = createWalletClient({ account: addr, chain: ARC_TESTNET as any, transport: custom(window.ethereum!) });
+    // Explicitly binding to the RPC URL to ensure production reliability (fixes Vercel-specific connection drops)
+    const pub = createPublicClient({ 
+      chain: ARC_TESTNET as any, 
+      transport: http("https://rpc.testnet.arc.network") 
+    });
+    const wallet = createWalletClient({ 
+      account: addr, 
+      chain: ARC_TESTNET as any, 
+      transport: custom(window.ethereum!) 
+    });
     setPublicClient(pub as any);
     setWalletClient(wallet as any);
+
+    // Debug log to verify contract and chain status on the live site
+    addLog({ 
+      type: "info", 
+      message: `[SYS] System Online. Chain: 5042002. Target: ${CONTRACT_ADDRESS.slice(0,6)}...` 
+    });
+
     return { pub, wallet };
-  }, []);
+  }, [addLog]);
 
   const fetchBalances = useCallback(async (addr: `0x${string}`, pub: any) => {
     try {
