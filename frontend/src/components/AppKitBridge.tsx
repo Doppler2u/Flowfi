@@ -16,7 +16,8 @@ export default function AppKitBridge() {
     if (!isConnected || !amount || parseFloat(amount) <= 0) return;
     
     // Check for provider
-    if (typeof window === "undefined" || !window.ethereum) {
+    const ethereum = typeof window !== "undefined" ? (window as any).ethereum : null;
+    if (!ethereum) {
       addLog({ type: "error", message: "No wallet provider (MetaMask) found." });
       return;
     }
