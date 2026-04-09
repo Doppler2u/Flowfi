@@ -130,8 +130,10 @@ export default function ContentMarketplace() {
 
       const uniqueEvents = new Map();
       for (const log of logs) {
-        if (log.args.contentId !== undefined) {
-          uniqueEvents.set(log.args.contentId.toString(), log.args);
+        // Support both naming conventions (id vs contentId) for maximum compatibility
+        const id = log.args.contentId ?? (log.args as any).id;
+        if (id !== undefined) {
+          uniqueEvents.set(id.toString(), log.args);
         }
       }
 
@@ -221,12 +223,17 @@ export default function ContentMarketplace() {
         secret: createSecret
       }));
 
-      addLog({ type: "info", message: `Successfully registered content #${createId}!` });
+      addLog({ type: "info", message: `Successfully registered content #${createId}! Syncing with network...` });
       setCreateId("");
       setCreatePrice("");
       setCreateTitle("");
       setCreateSecret("");
-      setActiveTab("gallery");
+      
+      // Small delay to allow Arc RPC to index the new event before fetching
+      setTimeout(() => {
+        setActiveTab("gallery");
+        fetchGallery();
+      }, 3000);
     } catch (err) {
       const error = err as any;
       const msg = error.message || "Failed to create content";
