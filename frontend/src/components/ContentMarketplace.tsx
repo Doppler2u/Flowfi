@@ -122,33 +122,38 @@ export default function ContentMarketplace() {
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      const lookbackLimit = targetBlocks || (15000n); // Default lookback ~30k blocks
-      const stopBlock = currentBlock > lookbackLimit ? currentBlock - lookbackLimit : DEPLOYMENT_BLOCK;
+      // Apply a 10-block buffer to avoid hitting out-of-sync RPC nodes (Race Condition Shield)
+      const safeTip = currentBlock > 10n ? currentBlock - 10n : currentBlock;
+      
+      const lookbackLimit = targetBlocks || (15000n);
+      const stopBlock = safeTip > lookbackLimit ? safeTip - lookbackLimit : DEPLOYMENT_BLOCK;
       const finalStopBlock = stopBlock < DEPLOYMENT_BLOCK ? DEPLOYMENT_BLOCK : stopBlock;
 
-      let currentTo = currentBlock;
-      let isFirstChunk = true;
+      let currentTo = safeTip;
       const uniqueEvents = new Map();
       
       addLog({ type: "info", message: `Protocol Scan: Syncing history to block ${finalStopBlock}...` });
 
+      // Using a much smaller chunk size (1000) for maximum reliability across different RPC providers
+      const SAFE_CHUNK = 1000n;
+
       while (currentTo > finalStopBlock) {
-        const currentFrom = currentTo > CHUNK_SIZE ? currentTo - CHUNK_SIZE : finalStopBlock;
+        const currentFrom = currentTo > SAFE_CHUNK ? currentTo - SAFE_CHUNK : finalStopBlock;
         const scanFrom = currentFrom < finalStopBlock ? finalStopBlock : currentFrom;
 
-        // Skip if the range is invalid
-        if (scanFrom >= currentTo && !isFirstChunk) break;
+        if (scanFrom >= currentTo) break;
 
-        // Use 'latest' for the first chunk to avoid race conditions with out-of-sync RPC nodes
+        // Manual hex-encoding for optimal RPC compatibility
+        const fromHex = `0x${scanFrom.toString(16)}`;
+        const toHex = `0x${currentTo.toString(16)}`;
+
         const logs = await publicClient.getLogs({
           address: CONTRACT_ADDRESS,
-          fromBlock: scanFrom,
-          toBlock: isFirstChunk ? 'latest' : currentTo,
+          fromBlock: fromHex as any,
+          toBlock: toHex as any,
         });
 
-        if (isFirstChunk) {
-          addLog({ type: "info", message: `[DEBUG] Scanner start: ${scanFrom.toString()} to LATEST` });
-        }
+        addLog({ type: "info", message: `[SYS] Scanned: ${scanFrom.toString()} to ${currentTo.toString()}` });
 
         for (const log of logs) {
           try {
