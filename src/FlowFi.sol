@@ -1,165 +1,224 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title FlowFi
- * @notice Programmable Payment Hub for Arc Testnet
- * @dev Combines pay-to-access content, usage-based subscriptions, and advanced routing.
+ * @notice Production-Ready Programmable Payment Hub for Arc Testnet
+ * @dev Implements IPFS metadata, ERC1155 access tokens, Escrowed payouts, and Dispute resolution.
  */
-contract FlowFi {
+contract FlowFi is ERC1155, Ownable, ReentrancyGuard {
+    // --- Constants ---
+    uint256 public constant MIN_CREATOR_STAKE = 5 ether; // 5 USDC (18 decimals on Arc)
+    uint256 public constant DISPUTE_DEPOSIT = 2 ether;    // 2 USDC
+    uint256 public constant PAYOUT_WINDOW = 24 hours;
+    uint256 public constant BPS_DENOMINATOR = 10000;
+
     // --- State Variables ---
+    uint256 public platformFeeBps = 250; // 2.50%
+    address public feeRecipient;
 
-    /// @dev 1. Balance System
-    mapping(address => uint256) public balances;
-
-    /// @dev 2. Pay-to-Access Content
     struct Content {
         address creator;
         uint256 price;
+        string metadataURI;
         bool exists;
     }
-    
-    mapping(uint256 => Content) public contents;
-    mapping(address => mapping(uint256 => bool)) public hasAccess;
 
-    /// @dev 3. Advanced Payment Routing
-    struct Route {
-        address primaryRecipient;
-        address secondaryRecipient;
-        uint256 splitPercent; // 0 to 100
+    struct Payout {
+        address creator;
+        uint256 amount;
+        uint256 releaseTime;
+        bool isDisputed;
+        bool resolved;
     }
+
+    mapping(uint256 => Content) public contents;
+    mapping(uint256 => Payout[]) public contentPayouts; // contentId => array of pending payouts
+    mapping(address => uint256) public balances;
+    mapping(address => uint256) public stakedBalances;
 
     // --- Events ---
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
-    event ContentCreated(uint256 indexed contentId, address indexed creator, uint256 price);
-    event ContentUnlocked(address indexed user, uint256 indexed contentId);
-    event ServiceUsed(address indexed user, uint256 cost);
-    event PaymentRouted(address indexed from, address indexed toPrimary, address indexed toSecondary, uint256 amount);
+    event Staked(address indexed user, uint256 amount);
+    event Unstaked(address indexed user, uint256 amount);
+    event ContentCreated(uint256 indexed contentId, address indexed creator, uint256 price, string metadataURI);
+    event UnlockInitiated(address indexed user, uint256 indexed contentId, uint256 payoutIndex);
+    event DisputeRaised(uint256 indexed contentId, uint256 payoutIndex, address indexed reporter);
+    event DisputeResolved(uint256 indexed contentId, uint256 payoutIndex, bool refunded);
+    event PayoutReleased(uint256 indexed contentId, uint256 payoutIndex, address indexed creator, uint256 amount);
 
     // --- Custom Errors ---
     error InsufficientBalance();
     error ContentAlreadyExists();
     error ContentDoesNotExist();
-    error ContentAlreadyUnlocked();
+    error InsufficientStake();
     error InvalidSplitPercent();
     error TransferFailed();
+    error AlreadyUnlocked();
+    error PayoutLocked();
+    error AlreadyResolved();
+    error Unauthorized();
+
+    constructor() ERC1155("") Ownable(msg.sender) {
+        feeRecipient = msg.sender;
+    }
 
     // --- Core Logic ---
 
-    /**
-     * @notice Deposit native tokens into the hub
-     */
     function deposit() external payable {
-        require(msg.value > 0, "Zero deposit");
+        if (msg.value == 0) revert("Zero deposit");
         balances[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);
     }
 
-    /**
-     * @notice Withdraw available balance natively
-     * @param amount Amount to withdraw
-     */
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external nonReentrant {
         if (balances[msg.sender] < amount) revert InsufficientBalance();
-        
         balances[msg.sender] -= amount;
-        
         (bool success, ) = msg.sender.call{value: amount}("");
         if (!success) revert TransferFailed();
-        
         emit Withdraw(msg.sender, amount);
     }
 
     /**
-     * @notice Create a new pay-to-access content
-     * @param id Unique content identifier
-     * @param price Cost to unlock
+     * @notice Creators must stake USDC to list content (Skin in the game)
      */
-    function createContent(uint256 id, uint256 price) external {
+    function stake() external payable {
+        stakedBalances[msg.sender] += msg.value;
+        emit Staked(msg.sender, msg.value);
+    }
+
+    function unstake(uint256 amount) external nonReentrant {
+        if (stakedBalances[msg.sender] < amount) revert InsufficientBalance();
+        stakedBalances[msg.sender] -= amount;
+        (bool success, ) = msg.sender.call{value: amount}("");
+        if (!success) revert TransferFailed();
+        emit Unstaked(msg.sender, amount);
+    }
+
+    /**
+     * @notice Create content with IPFS metadata
+     */
+    function createContent(uint256 id, uint256 price, string calldata metadataURI) external {
         if (contents[id].exists) revert ContentAlreadyExists();
-        
+        if (stakedBalances[msg.sender] < MIN_CREATOR_STAKE) revert InsufficientStake();
+
         contents[id] = Content({
             creator: msg.sender,
             price: price,
+            metadataURI: metadataURI,
             exists: true
         });
-        
-        emit ContentCreated(id, msg.sender, price);
+
+        emit ContentCreated(id, msg.sender, price, metadataURI);
     }
 
     /**
-     * @notice Unlock content using available contract balance
-     * @param id Content identifier
+     * @notice Unlock content: Funds go to Escrow for 24h
      */
-    function unlockContent(uint256 id) external {
-        Content memory content = contents[id];
+    function unlockContent(uint256 id) external nonReentrant {
+        Content storage content = contents[id];
         if (!content.exists) revert ContentDoesNotExist();
-        if (hasAccess[msg.sender][id]) revert ContentAlreadyUnlocked();
+        if (balanceOf(msg.sender, id) > 0) revert AlreadyUnlocked();
         if (balances[msg.sender] < content.price) revert InsufficientBalance();
-        
-        // Deduct from user
-        balances[msg.sender] -= content.price;
-        
-        // Credit creator internally
-        balances[content.creator] += content.price;
-        hasAccess[msg.sender][id] = true;
-        
-        emit ContentUnlocked(msg.sender, id);
-    }
 
-    /**
-     * @notice Deduct balance based on arbitrary service usage
-     * @param cost Cost of the service usage
-     */
-    function useService(uint256 cost) external {
-        if (balances[msg.sender] < cost) revert InsufficientBalance();
-        
-        balances[msg.sender] -= cost;
-        emit ServiceUsed(msg.sender, cost);
-    }
+        uint256 price = content.price;
+        balances[msg.sender] -= price;
 
-    /**
-     * @notice Deduct balance and route payment according to routing rules
-     * @param amount Total amount to route
-     * @param route The routing instructions
-     */
-    function routePayment(uint256 amount, Route calldata route) external {
-        if (balances[msg.sender] < amount) revert InsufficientBalance();
-        
-        balances[msg.sender] -= amount;
-        _routePayment(amount, route);
-    }
+        // Calculate platform fee
+        uint256 fee = (price * platformFeeBps) / BPS_DENOMINATOR;
+        uint256 creatorAmount = price - fee;
 
-    /**
-     * @notice Internal logic for conditional payment routing with fallback safety
-     * @param amount Total amount to route
-     * @param route The routing instructions
-     */
-    function _routePayment(uint256 amount, Route memory route) internal {
-        if (route.splitPercent > 100) revert InvalidSplitPercent();
-        
-        uint256 primaryAmount = (amount * route.splitPercent) / 100;
-        uint256 secondaryAmount = amount - primaryAmount;
-
-        // Try to route to primary recipient
-        if (primaryAmount > 0) {
-            (bool success, ) = route.primaryRecipient.call{value: primaryAmount}("");
-            if (!success) {
-                // Fallback: refund sender internally instead of locking
-                balances[msg.sender] += primaryAmount;
-            }
+        if (fee > 0) {
+            balances[feeRecipient] += fee;
         }
 
-        // Try to route to secondary recipient
-        if (secondaryAmount > 0) {
-            (bool success, ) = route.secondaryRecipient.call{value: secondaryAmount}("");
-            if (!success) {
-                // Fallback: refund sender internally
-                balances[msg.sender] += secondaryAmount;
-            }
+        // Create Payout in Escrow
+        uint256 payoutIndex = contentPayouts[id].length;
+        contentPayouts[id].push(Payout({
+            creator: content.creator,
+            amount: creatorAmount,
+            releaseTime: block.timestamp + PAYOUT_WINDOW,
+            isDisputed: false,
+            resolved: false
+        }));
+
+        // Mint access NFT
+        _mint(msg.sender, id, 1, "");
+
+        emit UnlockInitiated(msg.sender, id, payoutIndex);
+    }
+
+    /**
+     * @notice Raise a dispute if content is fraudulent
+     * @param id Content ID
+     * @param payoutIndex The specific purchase index
+     */
+    function dispute(uint256 id, uint256 payoutIndex) external payable {
+        if (msg.value < DISPUTE_DEPOSIT) revert InsufficientBalance();
+        if (payoutIndex >= contentPayouts[id].length) revert ContentDoesNotExist();
+        
+        Payout storage p = contentPayouts[id][payoutIndex];
+        if (p.resolved) revert AlreadyResolved();
+        
+        p.isDisputed = true;
+        emit DisputeRaised(id, payoutIndex, msg.sender);
+    }
+
+    /**
+     * @notice Release funds to creator after window expires
+     */
+    function releasePayout(uint256 id, uint256 payoutIndex) external nonReentrant {
+        Payout storage p = contentPayouts[id][payoutIndex];
+        if (block.timestamp < p.releaseTime) revert PayoutLocked();
+        if (p.isDisputed) revert PayoutLocked();
+        if (p.resolved) revert AlreadyResolved();
+
+        p.resolved = true;
+        balances[p.creator] += p.amount;
+
+        emit PayoutReleased(id, payoutIndex, p.creator, p.amount);
+    }
+
+    /**
+     * @notice Admin resolves a dispute (Phase 1 manual arbitration)
+     */
+    function resolveDispute(uint256 id, uint256 payoutIndex, bool refundBuyer, address buyer) external onlyOwner {
+        Payout storage p = contentPayouts[id][payoutIndex];
+        if (!p.isDisputed) revert Unauthorized();
+        if (p.resolved) revert AlreadyResolved();
+
+        p.resolved = true;
+        
+        if (refundBuyer) {
+            // Refund price to buyer + their dispute deposit
+            balances[buyer] += (p.amount + DISPUTE_DEPOSIT);
+            // Optionally slash creator stake here if blatant fraud
+        } else {
+            // Favor creator: send payout to creator + platform takes dispute deposit
+            balances[p.creator] += p.amount;
+            balances[feeRecipient] += DISPUTE_DEPOSIT;
         }
 
-        emit PaymentRouted(msg.sender, route.primaryRecipient, route.secondaryRecipient, amount);
+        emit DisputeResolved(id, payoutIndex, refundBuyer);
+    }
+
+    // --- Admin Functions ---
+
+    function setPlatformFee(uint256 newBps) external onlyOwner {
+        if (newBps > 1000) revert InvalidSplitPercent(); // Cap at 10%
+        platformFeeBps = newBps;
+    }
+
+    function setFeeRecipient(address newRecipient) external onlyOwner {
+        feeRecipient = newRecipient;
+    }
+
+    function uri(uint256 id) public view override returns (string memory) {
+        return contents[id].metadataURI;
     }
 }

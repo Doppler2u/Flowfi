@@ -81,7 +81,7 @@ export default function DepositWithdrawPanel() {
         <div className="w-2 h-6 bg-[#00FF87]" />
         <div className="flex items-center gap-1.5 flex-1">
           <h2 className="brut-title select-none text-[#008A4B] dark:text-[#00FF87]">Deposit / Withdraw</h2>
-          <InfoTooltip 
+          <InfoTooltip
             title="Liquidity Management"
             content="DEPOSIT USDC INTO THE FLOWFI CONTRACT TO ENABLE PROGRAMMABLE FEATURES. THIS CREATES AN ON-CHAIN BALANCE THAT CAN BE ROUTED, SPENT ON SERVICES, OR USED TO UNLOCK CONTENT."
           />
@@ -113,7 +113,17 @@ export default function DepositWithdrawPanel() {
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-dim)]">USDC</span>
             </div>
-            <p className="text-[9px] font-mono text-[var(--text-dim)]">Wallet: {parseFloat(walletBalance).toFixed(2)}</p>
+            <div className="flex justify-between items-center px-0.5">
+              <p className="text-[9px] font-mono text-[var(--text-dim)]">Wallet: {parseFloat(walletBalance).toFixed(2)}</p>
+              <a
+                href="https://faucet.circle.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[9px] font-black uppercase text-[#00FF87] hover:underline flex items-center gap-1"
+              >
+                Get USDC <ArrowDownCircle size={8} className="rotate-45" />
+              </a>
+            </div>
             <button
               onClick={handleDeposit}
               disabled={isDisabled || !depositAmt || loadingDeposit || isDepositExceeds}
