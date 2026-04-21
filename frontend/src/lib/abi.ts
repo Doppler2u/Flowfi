@@ -1,146 +1,251 @@
 export const FlowFiABI = [
-  { inputs: [], type: "error", name: "ContentAlreadyExists" },
-  { inputs: [], type: "error", name: "ContentAlreadyUnlocked" },
-  { inputs: [], type: "error", name: "ContentDoesNotExist" },
+  // --- Errors ---
   { inputs: [], type: "error", name: "InsufficientBalance" },
-  { inputs: [], type: "error", name: "InvalidSplitPercent" },
+  { inputs: [], type: "error", name: "ContentAlreadyExists" },
+  { inputs: [], type: "error", name: "ContentDoesNotExist" },
+  { inputs: [], type: "error", name: "InsufficientStake" },
   { inputs: [], type: "error", name: "TransferFailed" },
+  { inputs: [], type: "error", name: "AlreadyUnlocked" },
+  { inputs: [], type: "error", name: "PayoutLocked" },
+  { inputs: [], type: "error", name: "AlreadyResolved" },
+  { inputs: [], type: "error", name: "Unauthorized" },
+  { inputs: [], type: "error", name: "InvalidSplitPercent" },
+
+  // --- Events ---
   {
-    inputs: [
-      { internalType: "uint256", name: "contentId", type: "uint256", indexed: true },
-      { internalType: "address", name: "creator", type: "address", indexed: true },
-      { internalType: "uint256", name: "price", type: "uint256", indexed: false },
-    ],
-    type: "event",
-    name: "ContentCreated",
     anonymous: false,
-  },
-  {
     inputs: [
-      { internalType: "address", name: "user", type: "address", indexed: true },
-      { internalType: "uint256", name: "contentId", type: "uint256", indexed: true },
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
     ],
-    type: "event",
-    name: "ContentUnlocked",
-    anonymous: false,
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "user", type: "address", indexed: true },
-      { internalType: "uint256", name: "amount", type: "uint256", indexed: false },
-    ],
-    type: "event",
     name: "Deposit",
-    anonymous: false,
+    type: "event",
   },
   {
-    inputs: [
-      { internalType: "address", name: "from", type: "address", indexed: true },
-      { internalType: "address", name: "toPrimary", type: "address", indexed: true },
-      { internalType: "address", name: "toSecondary", type: "address", indexed: true },
-      { internalType: "uint256", name: "amount", type: "uint256", indexed: false },
-    ],
-    type: "event",
-    name: "PaymentRouted",
     anonymous: false,
-  },
-  {
     inputs: [
-      { internalType: "address", name: "user", type: "address", indexed: true },
-      { internalType: "uint256", name: "cost", type: "uint256", indexed: false },
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
     ],
-    type: "event",
-    name: "ServiceUsed",
-    anonymous: false,
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "user", type: "address", indexed: true },
-      { internalType: "uint256", name: "amount", type: "uint256", indexed: false },
-    ],
-    type: "event",
     name: "Withdraw",
+    type: "event",
+  },
+  {
     anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "Staked",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "Unstaked",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+      { indexed: true, internalType: "address", name: "creator", type: "address" },
+      { indexed: false, internalType: "uint256", name: "price", type: "uint256" },
+      { indexed: false, internalType: "string", name: "metadataURI", type: "string" },
+    ],
+    name: "ContentCreated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "payoutIndex", type: "uint256" },
+    ],
+    name: "UnlockInitiated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "payoutIndex", type: "uint256" },
+      { indexed: true, internalType: "address", name: "reporter", type: "address" },
+    ],
+    name: "DisputeRaised",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "payoutIndex", type: "uint256" },
+      { indexed: false, internalType: "bool", name: "refunded", type: "bool" },
+    ],
+    name: "DisputeResolved",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "payoutIndex", type: "uint256" },
+      { indexed: true, internalType: "address", name: "creator", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "PayoutReleased",
+    type: "event",
+  },
+
+  // --- Functions ---
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "balances",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "stakedBalances",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
-    name: "balances",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
   },
   {
     inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
     name: "contents",
     outputs: [
       { internalType: "address", name: "creator", type: "address" },
       { internalType: "uint256", name: "price", type: "uint256" },
+      { internalType: "string", name: "metadataURI", type: "string" },
       { internalType: "bool", name: "exists", type: "bool" },
     ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "uint256", name: "", type: "uint256" },
+    ],
+    name: "contentPayouts",
+    outputs: [
+      { internalType: "address", name: "creator", type: "address" },
+      { internalType: "uint256", name: "amount", type: "uint256" },
+      { internalType: "uint256", name: "releaseTime", type: "uint256" },
+      { internalType: "bool", name: "isDisputed", type: "bool" },
+      { internalType: "bool", name: "resolved", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "deposit",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "withdraw",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "stake",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "unstake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [
       { internalType: "uint256", name: "id", type: "uint256" },
       { internalType: "uint256", name: "price", type: "uint256" },
+      { internalType: "string", name: "metadataURI", type: "string" },
     ],
-    stateMutability: "nonpayable",
-    type: "function",
     name: "createContent",
     outputs: [],
-  },
-  { inputs: [], stateMutability: "payable", type: "function", name: "deposit", outputs: [] },
-  {
-    inputs: [
-      { internalType: "address", name: "", type: "address" },
-      { internalType: "uint256", name: "", type: "uint256" },
-    ],
-    stateMutability: "view",
-    type: "function",
-    name: "hasAccess",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-  },
-  {
-    inputs: [
-      { internalType: "uint256", name: "amount", type: "uint256" },
-      {
-        components: [
-          { internalType: "address", name: "primaryRecipient", type: "address" },
-          { internalType: "address", name: "secondaryRecipient", type: "address" },
-          { internalType: "uint256", name: "splitPercent", type: "uint256" },
-        ],
-        internalType: "struct FlowFi.Route",
-        name: "route",
-        type: "tuple",
-      },
-    ],
     stateMutability: "nonpayable",
     type: "function",
-    name: "routePayment",
-    outputs: [],
   },
   {
     inputs: [{ internalType: "uint256", name: "id", type: "uint256" }],
-    stateMutability: "nonpayable",
-    type: "function",
     name: "unlockContent",
     outputs: [],
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "cost", type: "uint256" }],
     stateMutability: "nonpayable",
     type: "function",
-    name: "useService",
-    outputs: [],
   },
   {
-    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    inputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "uint256", name: "payoutIndex", type: "uint256" },
+    ],
+    name: "dispute",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "uint256", name: "payoutIndex", type: "uint256" },
+    ],
+    name: "releasePayout",
+    outputs: [],
     stateMutability: "nonpayable",
     type: "function",
-    name: "withdraw",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "uint256", name: "payoutIndex", type: "uint256" },
+      { internalType: "bool", name: "refundBuyer", type: "bool" },
+      { internalType: "address", name: "buyer", type: "address" },
+    ],
+    name: "resolveDispute",
     outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "account", type: "address" },
+      { internalType: "uint256", name: "id", type: "uint256" },
+    ],
+    name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "id", type: "uint256" }],
+    name: "uri",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
   },
 ] as const;
 
-export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x392ea3e652f436583514c2aa62761a558c6af9b0") as `0x${string}`;
+export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xaE933dE72586F4dA6be93C64D99fB702d3a34200") as `0x${string}`;

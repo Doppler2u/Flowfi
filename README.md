@@ -1,48 +1,51 @@
 # FlowFi 🌊
-### High-Performance Content Marketplace & Programmable Payment Hub
+### Decentralized Trust & Privacy Marketplace on Arc Network
 
-**FlowFi** is a decentralized platform built on the **Arc Network**, designed for seamless content monetization and deep-history asset recovery. It combines a **Refined Brutalist UI** with a robust "Bulletproof" indexing logic that ensures data integrity where standard RPCs often fail.
+**FlowFi** is a state-of-the-art Web3 platform designed to facilitate secure, encrypted, and trustless digital asset trading. It leverages the **Arc Testnet** for high-speed transactions and **Lit Protocol** for autonomous privacy gating.
 
 ![FlowFi Dashboard](./frontend/public/screenshot.png)
 
 ---
 
-## 🏆 Hackathon Highlights (Why FlowFi?)
+## 🏆 Key Features & Architecture
 
-### 1. 🛡️ Bulletproof Sync Engine
-Most dApps rely on fragile RPC indexing that often breaks due to block limits or node latency. FlowFi implements a **Custom Sequential Block Scanner**:
-- **Micro-Chunking**: Traverses history in 1,000-block segments for maximum RPC compatibility.
-- **Race Condition Shield**: Implements a 10-block safety buffer to handle out-of-sync nodes in a load-balanced cluster.
-- **Raw Log Decoding**: Uses low-level `decodeEventLog` with manual hex-encoding to bypass standard middleware issues.
+### 1. 🛡️ Trustless Escrow & Economic Security
+FlowFi eliminates "friendly fraud" through rigorous economic protocols:
+- **24-Hour Dispute Window**: Payments are locked in escrow upon purchase. If a buyer receives a dead link or invalid payload, they can raise a dispute, freezing the funds.
+- **Security Deposits**: Raising a dispute requires a 2 USDC deposit. This forces buyers to put "skin in the game," eliminating spam reports.
+- **Creator Staking**: Content creators must stake a minimum of 5 USDC collateral in the protocol. Verified status prevents low-quality spam rings. Collateral is slashable in cases of verified fraud.
 
-### 2. 🎨 Refined Brutalist UX
+### 2. 🤫 Mathematical Privacy (Lit Protocol)
+Data is not just token-gated; it is cryptographically locked:
+- **Client-Side Encryption**: Secrets are encrypted locally in the browser before ever touching the network via the `@lit-protocol/lit-node-client`.
+- **Autonomous Gating**: The encrypted ciphertext is hosted on IPFS. Decentralized Lit nodes will only decrypt the content if the requesting wallet holds the specific ERC-1155 Access NFT on the Arc Testnet.
+
+### 3. 🛡️ Bulletproof Sync Engine
+Most dApps rely on fragile RPC indexing that often breaks due to block limits. FlowFi implements an adaptive **RPC Fallback Scanner**:
+- **Smart Range Scanning**: Dynamically pulls up to 9,500 blocks backward from the chain tip to prevent `413 Range Errors`.
+- **Race Condition Shield**: Implements a 10-block buffer to handle out-of-sync RPC nodes.
+
+### 4. 🎨 Refined Brutalist UX
 A visual identity that matches the precision of the code:
 - **Zero-Radius Design**: Stark, hard edges and thick borders for high-impact readability.
 - **Dual-Theme Engine**: Sleek **Dark Mode** and high-contrast **Newsprint Light Mode**.
-- **Diagnostic Activity Log**: Real-time system feedback providing transparency into the on-chain scanning process.
-
-### 3. 💳 Advanced Payment Lifecycle
-- **Native USDC Core**: All payments and balances use native USDC on Arc.
-- **Circle App Kit Integration**: Seamlessly bridge liquidity from Ethereum Sepolia via CCTP (Circle App Kit + Viem Adapter).
-- **Atomic Unlocking**: Content secrets are crytographically gated until the on-chain payment is confirmed.
+- **Real-Time Telemetry**: An Activity Log provides transparent system feedback on every node handshake and block scan.
 
 ---
 
 ## 🚀 Technical Stack
 
-- **L1 Blockchain**: Arc Testnet (Circle L1)
-- **Frontend**: Next.js 15 (App Router), Tailwind CSS v4
-- **Web3 Library**: Viem v2, Wagmi
-- **Liquidity**: Circle App Kit (CCTP Native Bridge)
+- **L1 Blockchain**: Arc Testnet (RPC: `rpc.testnet.arc.network`)
+- **Privacy Engine**: Lit Protocol (`datil` network)
+- **Frontend**: Next.js 15 (App Router), Tailwind CSS v4, Viem v2
+- **Data Layer**: IPFS (via Pinata) for permissionless metadata storage
 - **Design**: Refined Brutalism (Space Grotesk & Space Mono)
 
 ---
 
-## 📦 Key Use Cases
-
-- **Pay-Per-View Content**: Creators sell Articles, Videos, and Code Snippets directly to users.
-- **Deep History Recovery**: The "Rescue Scan" feature allows users to recover assets registered months ago by traversing up to 200,000 blocks.
-- **Liquid Finance**: Real-time contract balance management for instant service payments.
+## 📅 Roadmap: Phase 3
+- **Decentralized Juries**: Transitioning dispute resolution from a central admin to a community-voted Kleros-style architecture.
+- **GenLayer AI Validators**: Integrating Off-chain AI agents to pre-validate URLs and resolve basic disputes autonomously without human intervention.
 
 ---
 
@@ -65,9 +68,9 @@ cd frontend
 # Install dependencies
 npm install
 
-# Configure environment
-# Create .env.local with:
-# NEXT_PUBLIC_CONTRACT_ADDRESS=0x392ea3e652f436583514c2aa62761a558c6af9b0
+# Configure environment (.env.local)
+NEXT_PUBLIC_CONTRACT_ADDRESS="0xaE933dE72586F4dA6be93C64D99fB702d3a34200"
+PINATA_JWT="your_pinata_jwt"
 
 # Run development server
 npm run dev
@@ -78,9 +81,8 @@ npm run dev
 ## 📡 Deployment Data
 
 - **Chain ID**: `5042002` (Arc Testnet)
-- **Contract Address**: `0x392ea3e652f436583514c2aa62761a558c6af9b0`
+- **Contract Address**: `0xaE933dE72586F4dA6be93C64D99fB702d3a34200`
 - **Explorer**: [testnet.arcscan.app](https://testnet.arcscan.app)
-- **Vercel Demo**: [flowfi-three.vercel.app](https://flowfi-three.vercel.app/)
 
 ---
 
