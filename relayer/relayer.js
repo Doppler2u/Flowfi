@@ -5,7 +5,7 @@
 // Usage: node relayer.js
 // Requires .env with: PRIVATE_KEY, FLOWFI_CONTRACT_ARC, ARBITER_CONTRACT_GENLAYER
 
-import { createPublicClient, createWalletClient, http, parseAbiItem } from "viem";
+import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { createClient, createAccount } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
@@ -33,9 +33,17 @@ const arcTestnet = {
 };
 
 // ── ABIs ─────────────────────────────────────────────────────────────────────
-const DISPUTE_RAISED_ABI = parseAbiItem(
-  "event DisputeRaised(uint256 indexed contentId, uint256 payoutIndex, address indexed reporter)"
-);
+// Full ABI definition is more reliable than parseAbiItem for watchContractEvent decoding
+const DISPUTE_RAISED_EVENT = {
+  anonymous: false,
+  name: "DisputeRaised",
+  type: "event",
+  inputs: [
+    { indexed: true,  internalType: "uint256", name: "contentId",   type: "uint256" },
+    { indexed: false, internalType: "uint256", name: "payoutIndex", type: "uint256" },
+    { indexed: true,  internalType: "address", name: "reporter",    type: "address" },
+  ],
+};
 
 const RESOLVE_DISPUTE_ABI = [{
   name: "resolveDispute",
@@ -172,9 +180,14 @@ async function startRelayer() {
 
   arcPublic.watchContractEvent({
     address: FLOWFI_ARC_ADDRESS,
-    event: DISPUTE_RAISED_ABI,
+    abi: [DISPUTE_RAISED_EVENT],
+    eventName: "DisputeRaised",
     onLogs: (logs) => {
       for (const log of logs) {
+        if (!log.args) {
+          console.error("[Arc] Received log with no args, skipping.", log);
+          continue;
+        }
         handleDisputeRaised(log);
       }
     },
