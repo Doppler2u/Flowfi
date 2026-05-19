@@ -1,0 +1,6 @@
+{
+  "name": "flowfi-arbiter",
+  "type": "module",
+  "scripts": { "deploy": "node deploy.js" },
+  "dependencies": { "genlayer-js": "^1.1.8", "viem": "^2.0.0" }
+}

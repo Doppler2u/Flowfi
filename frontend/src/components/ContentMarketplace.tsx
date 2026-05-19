@@ -578,11 +578,11 @@ export default function ContentMarketplace() {
               </div>
 
               <div className="space-y-3 mt-6">
-                <p className="font-bold text-[#FFE600] uppercase tracking-widest text-xs border-b-2 border-[#FFE600]/30 pb-1">Phase 3: Coming Soon</p>
+                <p className="font-bold text-[#00FF87] uppercase tracking-widest text-xs border-b-2 border-[#00FF87]/30 pb-1">Phase 3: Implemented</p>
                 
                 <div className="border border-[#333] p-3 space-y-2">
-                   <p><span className="text-[#00D9FF] font-bold">1. Decentralized Juries:</span> The current central Administrator role for resolving disputes will transition to a decentralized voting community (e.g. Kleros).</p>
-                   <p><span className="text-[#FF3B3B] font-bold">2. GenLayer AI Validation:</span> Autonomous AI agents will pre-validate URLs and content off-chain before executing the final Escrow release.</p>
+                   <p><span className="text-white font-bold">4. GenLayer AI Arbitration:</span> The central Administrator role has been replaced by a decentralized Intelligent Contract (`FlowFiArbiter.py`) on GenLayer's Studionet.</p>
+                   <p><span className="text-white font-bold">5. Oracle Bridge:</span> A highly optimized Node.js relayer actively pipes `DisputeRaised` events from the Arc Testnet directly to the AI Jury, which then executes the on-chain refund or payout autonomously.</p>
                 </div>
               </div>
 
@@ -959,7 +959,7 @@ export default function ContentMarketplace() {
                               </div>
                               <div className="flex flex-col gap-2">
                                 <p className="text-[10px] font-mono text-[var(--text-main)] opacity-80 break-all p-2 bg-[var(--bg-page)] border border-[#00FF87]/20">
-                                  {item.payouts[0]?.isDisputed ? "[ DISPUTE OPEN: FUNDS FROZEN ]" : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
+                                  {item.payouts[0]?.isDisputed ? "[ DISPUTE OPEN: GENLAYER AI JURY DELIBERATING... ]" : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
                                 </p>
                                 
                                 {!revealedSecrets[item.id.toString()] && !item.payouts[0]?.isDisputed && (

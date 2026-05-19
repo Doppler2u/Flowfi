@@ -43,9 +43,11 @@ A visual identity that matches the precision of the code:
 
 ---
 
-## 📅 Roadmap: Phase 3
-- **Decentralized Juries**: Transitioning dispute resolution from a central admin to a community-voted Kleros-style architecture.
-- **GenLayer AI Validators**: Integrating Off-chain AI agents to pre-validate URLs and resolve basic disputes autonomously without human intervention.
+## 🤖 Phase 3: Autonomous AI Arbitration (Live)
+FlowFi has successfully integrated the **GenLayer Network** to completely decentralize the dispute resolution process, eliminating the need for a central administrator.
+- **GenVM Intelligent Contracts**: When a dispute is raised, an off-chain Python contract (`FlowFiArbiter.py`) executing on GenLayer's Studionet automatically evaluates the disputed content metadata.
+- **Oracle Bridge**: A highly-optimized Node.js Relayer automatically pipes `DisputeRaised` events from the Arc Testnet to GenLayer.
+- **Optimistic AI Consensus**: Instead of a human manually reviewing disputes, multiple LLMs act as independent jurors on GenLayer. They analyze the metadata, come to a consensus on whether the transaction was a "Creator Scam" or "Buyer Fraud", and automatically execute the refund via the Oracle Bridge back on the Arc Testnet.
 
 ---
 
