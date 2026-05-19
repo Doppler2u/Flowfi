@@ -13,17 +13,16 @@ import { readFileSync } from "fs";
 import path from "path";
 
 // ── Config ───────────────────────────────────────────────────────────────────
-const env = Object.fromEntries(
-  readFileSync(".env", "utf-8").split("\n")
-    .filter(l => l.includes("="))
-    .map(l => l.trim().split("="))
-);
+const PRIVATE_KEY           = process.env.PRIVATE_KEY;
+const FLOWFI_ARC_ADDRESS    = process.env.FLOWFI_CONTRACT_ARC;
+const ARBITER_GL_ADDRESS    = process.env.ARBITER_CONTRACT_GENLAYER;
+const POLL_INTERVAL_MS      = 5000;
+const MAX_WAIT_MS           = 300000;
 
-const PRIVATE_KEY           = env["PRIVATE_KEY"];
-const FLOWFI_ARC_ADDRESS    = env["FLOWFI_CONTRACT_ARC"];     // FlowFi on Arc
-const ARBITER_GL_ADDRESS    = env["ARBITER_CONTRACT_GENLAYER"]; // FlowFiArbiter on Studionet
-const POLL_INTERVAL_MS      = 5000;   // check GenLayer every 5s
-const MAX_WAIT_MS           = 300000; // 5 min timeout per dispute
+if (!PRIVATE_KEY || !FLOWFI_ARC_ADDRESS || !ARBITER_GL_ADDRESS) {
+  console.error("❌ Missing required environment variables. Set PRIVATE_KEY, FLOWFI_CONTRACT_ARC, ARBITER_CONTRACT_GENLAYER.");
+  process.exit(1);
+}
 
 // ── Arc Testnet chain definition ──────────────────────────────────────────────
 const arcTestnet = {
