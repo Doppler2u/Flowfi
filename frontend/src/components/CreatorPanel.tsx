@@ -197,7 +197,7 @@ export default function CreatorPanel() {
             <p className="text-[9px] font-mono text-[#00879F]">USDC collateral</p>
           </div>
           <div className="p-3 border-2 border-[var(--border-main)] bg-[var(--bg-page)]/50 space-y-1">
-            <p className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-dim)]">Earnings</p>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-dim)]">Refunds / Earnings</p>
             <p className="text-xl font-black text-[#00FF87] font-mono tabular-nums">{parseFloat(earnings).toFixed(3)}</p>
             <p className="text-[9px] font-mono text-[#008A4B]">USDC claimable</p>
           </div>
