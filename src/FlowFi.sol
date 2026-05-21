@@ -20,6 +20,7 @@ contract FlowFi is ERC1155, Ownable, ReentrancyGuard {
     // --- State Variables ---
     uint256 public platformFeeBps = 250; // 2.50%
     address public feeRecipient;
+    address public relayer;
 
     struct Content {
         address creator;
@@ -30,6 +31,7 @@ contract FlowFi is ERC1155, Ownable, ReentrancyGuard {
 
     struct Payout {
         address creator;
+        address buyer;
         uint256 amount;
         uint256 releaseTime;
         bool isDisputed;
@@ -66,6 +68,15 @@ contract FlowFi is ERC1155, Ownable, ReentrancyGuard {
 
     constructor() ERC1155("") Ownable(msg.sender) {
         feeRecipient = msg.sender;
+    }
+
+    modifier onlyAuthorized() {
+        require(msg.sender == owner() || msg.sender == relayer, "Unauthorized");
+        _;
+    }
+
+    function setRelayer(address _relayer) external onlyOwner {
+        relayer = _relayer;
     }
 
     // --- Core Logic ---
@@ -141,6 +152,7 @@ contract FlowFi is ERC1155, Ownable, ReentrancyGuard {
         uint256 payoutIndex = contentPayouts[id].length;
         contentPayouts[id].push(Payout({
             creator: content.creator,
+            buyer: msg.sender,
             amount: creatorAmount,
             releaseTime: block.timestamp + PAYOUT_WINDOW,
             isDisputed: false,
@@ -187,17 +199,16 @@ contract FlowFi is ERC1155, Ownable, ReentrancyGuard {
     /**
      * @notice Admin resolves a dispute (Phase 1 manual arbitration)
      */
-    function resolveDispute(uint256 id, uint256 payoutIndex, bool refundBuyer, address buyer) external onlyOwner {
+    function resolveDispute(uint256 id, uint256 payoutIndex, bool refundBuyer) external onlyAuthorized {
         Payout storage p = contentPayouts[id][payoutIndex];
         if (!p.isDisputed) revert Unauthorized();
         if (p.resolved) revert AlreadyResolved();
 
         p.resolved = true;
-        
+
         if (refundBuyer) {
             // Refund price to buyer + their dispute deposit
-            balances[buyer] += (p.amount + DISPUTE_DEPOSIT);
-            // Optionally slash creator stake here if blatant fraud
+            balances[p.buyer] += (p.amount + DISPUTE_DEPOSIT);
         } else {
             // Favor creator: send payout to creator + platform takes dispute deposit
             balances[p.creator] += p.amount;

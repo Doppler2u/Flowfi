@@ -56,6 +56,13 @@ const RESOLVE_DISPUTE_ABI = [{
   outputs: [],
 }];
 
+const SET_RELAYER_ABI = [{
+  name: "setRelayer",
+  type: "function",
+  inputs: [{ name: "_relayer", type: "address" }],
+  outputs: [],
+}];
+
 // ── Clients ───────────────────────────────────────────────────────────────────
 const account = privateKeyToAccount(PRIVATE_KEY);
 
