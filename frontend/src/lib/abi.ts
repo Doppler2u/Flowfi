@@ -136,6 +136,7 @@ export const FlowFiABI = [
     name: "contentPayouts",
     outputs: [
       { internalType: "address", name: "creator", type: "address" },
+      { internalType: "address", name: "buyer", type: "address" },
       { internalType: "uint256", name: "amount", type: "uint256" },
       { internalType: "uint256", name: "releaseTime", type: "uint256" },
       { internalType: "bool", name: "isDisputed", type: "bool" },

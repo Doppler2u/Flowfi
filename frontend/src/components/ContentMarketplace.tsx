@@ -287,7 +287,7 @@ export default function ContentMarketplace() {
               : Promise.resolve(),
             // Payout check
             publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "contentPayouts", args: [id, 0n] })
-              .then((p: any) => { payouts.push({ creator: p[0], amount: p[1], releaseTime: p[2], isDisputed: p[3], resolved: p[4], refunded: refundMap.get(`${id.toString()}_0`) }); })
+              .then((p: any) => { payouts.push({ creator: p[0], amount: p[2], releaseTime: p[3], isDisputed: p[4], resolved: p[5], refunded: refundMap.get(`${id.toString()}_0`) }); })
               .catch(() => {}),
           ]);
 
