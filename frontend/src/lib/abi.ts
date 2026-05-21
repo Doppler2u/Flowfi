@@ -248,4 +248,4 @@ export const FlowFiABI = [
   },
 ] as const;
 
-export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xd12770bdCa37B4FdC2A01839168F4ceB44503917") as `0x${string}`;
+export const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x348cedA90058232b63ccFE1514B2cfbdcecb6e56") as `0x${string}`;
