@@ -4,7 +4,7 @@ import WalletConnect from "@/components/WalletConnect";
 import DepositWithdrawPanel from "@/components/DepositWithdrawPanel";
 import ContentMarketplace from "@/components/ContentMarketplace";
 import AppKitBridge from "@/components/AppKitBridge";
-import UsagePanel from "@/components/UsagePanel";
+import CreatorPanel from "@/components/CreatorPanel";
 import ActivityLog from "@/components/ActivityLog";
 import ThemeToggle from "@/components/ThemeToggle";
 import { FlowFiABI, CONTRACT_ADDRESS } from "@/lib/abi";
@@ -88,10 +88,10 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto text-left px-4">
               {[
-                { label: "01", title: "Deposit / Withdraw", desc: "Manage your USDC balance", color: "#00FF87" },
-                { label: "02", title: "Content Market", desc: "Experimental architecture", color: "#FFE600" },
-                { label: "03", title: "Usage Credits", desc: "Pay-per-use model", color: "#FF3B3B" },
-                { label: "04", title: "Payment Router", desc: "Split payments on-chain", color: "#00D9FF" },
+                { label: "01", title: "Deposit / Withdraw", desc: "Fund your buyer account", color: "#00FF87" },
+                { label: "02", title: "Content Market", desc: "Buy encrypted content", color: "#FFE600" },
+                { label: "03", title: "Creator Panel", desc: "Stake, list & earn", color: "#00D9FF" },
+                { label: "04", title: "Liquidity Bridge", desc: "Sepolia → Arc via CCTP", color: "#4D7FFF" },
               ].map((f) => (
                 <div key={f.title} className="border-2 p-4 bg-[var(--bg-card)]/5" style={{borderColor: f.color}}>
                   <p className="text-[10px] font-mono mb-2" style={{color: f.color}}>{f.label}</p>
@@ -117,7 +117,7 @@ export default function Home() {
 
               {/* Right column */}
               <div className="flex flex-col gap-6 h-full lg:order-3">
-                <UsagePanel />
+                <CreatorPanel />
               </div>
             </div>
             
