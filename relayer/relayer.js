@@ -17,7 +17,7 @@ const PRIVATE_KEY           = process.env.PRIVATE_KEY;
 const FLOWFI_ARC_ADDRESS    = process.env.FLOWFI_CONTRACT_ARC;
 const ARBITER_GL_ADDRESS    = process.env.ARBITER_CONTRACT_GENLAYER;
 const POLL_INTERVAL_MS      = 5000;
-const MAX_WAIT_MS           = 300000;
+const MAX_WAIT_MS           = 900000; // 15 minutes — GenLayer consensus can take 5-10 min
 
 if (!PRIVATE_KEY || !FLOWFI_ARC_ADDRESS || !ARBITER_GL_ADDRESS) {
   console.error("❌ Missing required environment variables. Set PRIVATE_KEY, FLOWFI_CONTRACT_ARC, ARBITER_CONTRACT_GENLAYER.");
@@ -81,17 +81,28 @@ async function triggerArbitration(disputeId, cid, contentUrl, taskDescription) {
   console.log(`[GenLayer] Arbitration transaction accepted.`);
 }
 
+async function getVerdictFromGenLayer(disputeId) {
+  const raw = await glClient.readContract({
+    address: ARBITER_GL_ADDRESS,
+    functionName: "get_verdict",
+    args: [disputeId],
+    jsonSafeReturn: true,
+  });
+  // get_verdict returns a JSON string — parse it
+  if (!raw || raw === "") return null;
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+}
+
 async function pollForVerdict(disputeId) {
   console.log(`[GenLayer] Polling for verdict on dispute ${disputeId}...`);
   const start = Date.now();
 
   while (Date.now() - start < MAX_WAIT_MS) {
-    const verdict = await glClient.readContract({
-      address: ARBITER_GL_ADDRESS,
-      functionName: "get_verdict",
-      args: [disputeId],
-      jsonSafeReturn: true,
-    });
+    const verdict = await getVerdictFromGenLayer(disputeId);
 
     if (verdict && verdict.status === "RESOLVED") {
       console.log(`[GenLayer] Verdict received:`, verdict);
@@ -100,6 +111,13 @@ async function pollForVerdict(disputeId) {
 
     console.log(`[GenLayer] Still deliberating... retrying in ${POLL_INTERVAL_MS / 1000}s`);
     await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+  }
+
+  // Before throwing, do one last check — GenLayer may have finalized during the timeout
+  const finalCheck = await getVerdictFromGenLayer(disputeId);
+  if (finalCheck && finalCheck.status === "RESOLVED") {
+    console.log(`[GenLayer] Verdict found on final check:`, finalCheck);
+    return finalCheck;
   }
 
   throw new Error(`[GenLayer] Timeout waiting for verdict on dispute ${disputeId}`);
