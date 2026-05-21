@@ -73,7 +73,7 @@ cd frontend
 npm install
 
 # Configure environment (.env.local)
-NEXT_PUBLIC_CONTRACT_ADDRESS="0xaE933dE72586F4dA6be93C64D99fB702d3a34200"
+NEXT_PUBLIC_CONTRACT_ADDRESS="0x348cedA90058232b63ccFE1514B2cfbdcecb6e56"
 PINATA_JWT="your_pinata_jwt"
 
 # Run development server
@@ -89,7 +89,7 @@ npm install
 
 # Configure environment (.env)
 PRIVATE_KEY="your_private_key"
-FLOWFI_CONTRACT_ARC="0xaE933dE72586F4dA6be93C64D99fB702d3a34200"
+FLOWFI_CONTRACT_ARC="0x348cedA90058232b63ccFE1514B2cfbdcecb6e56"
 ARBITER_CONTRACT_GENLAYER="0x06E4B36E19dB89A821d0F852868E868f992Dd0e4"
 
 # Deploy GenLayer contract (only needed if redeploying)
@@ -105,7 +105,7 @@ node relayer.js
 
 | Component | Network | Address |
 |-----------|---------|---------|
-| **FlowFi Contract** | Arc Testnet (Chain ID: `5042002`) | `0xaE933dE72586F4dA6be93C64D99fB702d3a34200` |
+| **FlowFi Contract** | Arc Testnet (Chain ID: `5042002`) | `0x348cedA90058232b63ccFE1514B2cfbdcecb6e56` |
 | **FlowFiArbiter** | GenLayer Studionet | `0x06E4B36E19dB89A821d0F852868E868f992Dd0e4` |
 | **Relayer** | Railway (Cloud) | Auto-deployed via GitHub |
 
