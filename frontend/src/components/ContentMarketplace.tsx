@@ -49,6 +49,7 @@ interface PayoutData {
   releaseTime: bigint;
   isDisputed: boolean;
   resolved: boolean;
+  refunded?: boolean;
 }
 
 const TYPE_ICONS = {
@@ -215,6 +216,7 @@ export default function ContentMarketplace() {
 
       let currentTo = safeTip;
       const uniqueEvents = new Map();
+      const refundMap = new Map();
       const SAFE_CHUNK = 1000n;
 
       // ── Phase 1: Scan events (fast, just reading logs) ───────────────
@@ -242,6 +244,11 @@ export default function ContentMarketplace() {
                 uniqueEvents.set(id.toString(), {
                   id, creator: args.creator, price: args.price, metadataURI: args.metadataURI
                 });
+              }
+            } else if (decoded.eventName === "DisputeResolved") {
+              const args = decoded.args as any;
+              if (args.contentId !== undefined) {
+                refundMap.set(`${args.contentId.toString()}_${args.payoutIndex.toString()}`, args.refunded);
               }
             }
           } catch (e) {}
@@ -280,7 +287,7 @@ export default function ContentMarketplace() {
               : Promise.resolve(),
             // Payout check
             publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "contentPayouts", args: [id, 0n] })
-              .then((p: any) => { payouts.push({ creator: p[0], amount: p[1], releaseTime: p[2], isDisputed: p[3], resolved: p[4] }); })
+              .then((p: any) => { payouts.push({ creator: p[0], amount: p[1], releaseTime: p[2], isDisputed: p[3], resolved: p[4], refunded: refundMap.get(`${id.toString()}_0`) }); })
               .catch(() => {}),
           ]);
 
@@ -716,7 +723,9 @@ export default function ContentMarketplace() {
                               <div className="flex flex-col gap-2">
                                 <p className="text-[10px] font-mono text-[var(--text-main)] opacity-80 break-all p-2 bg-[var(--bg-page)] border border-[#00FF87]/20">
                                   {item.payouts[0]?.isDisputed
-                                    ? "[ DISPUTE OPEN — GENLAYER AI JURY DELIBERATING... ]"
+                                    ? item.payouts[0]?.resolved 
+                                        ? (item.payouts[0]?.refunded ? "[ VERDICT: BUYER REFUNDED (SCAM DETECTED) ]" : "[ VERDICT: DISPUTE DISMISSED (CONTENT VALID) ]")
+                                        : "[ DISPUTE OPEN — GENLAYER AI JURY DELIBERATING... ]"
                                     : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
                                 </p>
                                 {!revealedSecrets[item.id.toString()] && !item.payouts[0]?.isDisputed && (
