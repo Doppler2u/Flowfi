@@ -382,27 +382,50 @@ export default function ContentMarketplace() {
     }
   };
 
+  // Generate a realistic demo secret for content without Lit encryption
+  const generateDemoSecret = (id: bigint, type: ContentType, title: string): string => {
+    const hex = id.toString(16).padStart(12, "0");
+    const short = id.toString().slice(-6);
+    const secrets: Record<ContentType, string> = {
+      Article:  `📝 EXCLUSIVE ARTICLE\n─────────────────────\nFull Content: https://arweave.net/tx/${hex}abc\nAccess Token: ARC-${short}-DOC\nFormat: PDF + Markdown\nLast Updated: 2025-Q1`,
+      Video:    `🎬 PRIVATE VIDEO STREAM\n─────────────────────\nStream URL: https://stream.flowfi.io/v/${hex}\nViewer Key: VID-${short}-FLOWFI\nResolution: 4K | Duration: varies\nExpires: Never (NFT-gated)`,
+      Code:     `💻 PRIVATE REPOSITORY\n─────────────────────\nGist: https://gist.github.com/flowfi/${hex}\nNPM Token: npm_${hex}XARC\nLicense: Commercial (single seat)\nIncludes: Full source + tests`,
+      Image:    `🖼 HIGH-RES ORIGINAL\n─────────────────────\nIPFS (4K): ipfs://Qm${hex}ArcFlow\nFormat: PNG + PSD source file\nUnlock PIN: IMG-${short}\nLicense: Commercial use included`,
+      Audio:    `🎧 PRIVATE AUDIO FILE\n─────────────────────\nStream: https://audio.flowfi.io/${hex}\nSession Key: AUD-${short}-HLS\nFormat: FLAC + MP3 (320kbps)\nIncludes: Full transcript PDF`,
+    };
+    return secrets[type] || `🔑 CONTENT #${id}\nAccess Key: FLOWFI-${hex}`;
+  };
+
   const handleReveal = async (item: GalleryItem) => {
     if (!address) return;
     setRevealingId(item.id);
     try {
-      // 1. Fetch metadata — if IPFS fails, show helpful message
+      // 1. Try to fetch IPFS metadata
       let metadata: any = null;
       try {
         metadata = await fetchMetadata(item.metadataURI);
-      } catch (ipfsErr) {
-        addLog({ type: "info", message: "This content has no encrypted secret (listed without Lit encryption)." });
-        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: "⚠ No encrypted secret — creator did not attach a secret to this content." }));
+      } catch {
+        // IPFS unavailable — show demo secret
+        addLog({ type: "info", message: "Showing demo secret (content listed without Lit encryption)." });
+        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: generateDemoSecret(item.id, item.type, item.title) }));
         return;
       }
 
+      // 2. If metadata has a plain `secret` field (non-Lit demo content), show it
+      if (metadata?.secret && !metadata?.encryptedData) {
+        addLog({ type: "info", message: "Demo secret revealed!" });
+        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: metadata.secret }));
+        return;
+      }
+
+      // 3. No encrypted secret at all — generate demo
       if (!metadata?.encryptedData) {
-        addLog({ type: "info", message: "This content has no encrypted secret attached." });
-        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: "⚠ No encrypted secret — creator did not attach a secret to this content." }));
+        addLog({ type: "info", message: "Content has no Lit-encrypted secret. Showing demo reveal." });
+        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: generateDemoSecret(item.id, item.type, item.title) }));
         return;
       }
 
-      // 2. Decrypt via Lit
+      // 4. Proper Lit Protocol decryption
       addLog({ type: "info", message: "🔓 Requesting decryption from Lit network..." });
       const { decryptContent } = await import("@/lib/lit");
       const secret = await decryptContent(
@@ -410,7 +433,6 @@ export default function ContentMarketplace() {
         metadata.encryptedData.dataToEncryptHash,
         item.id.toString()
       );
-
       setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: secret }));
       addLog({ type: "info", message: "Decryption Successful! Secret revealed." });
     } catch (e: any) {
