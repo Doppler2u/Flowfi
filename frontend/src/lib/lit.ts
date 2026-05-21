@@ -4,7 +4,7 @@ import * as uint8arrays from "uint8arrays";
 
 // Arc Testnet RPC for Lit nodes to verify conditions
 const ARC_RPC = "https://rpc.testnet.arc.network";
-const FLOWFI_CONTRACT = "0xd12770bdCa37B4FdC2A01839168F4ceB44503917";
+const FLOWFI_CONTRACT = "0x348cedA90058232b63ccFE1514B2cfbdcecb6e56";
 
 let litNodeClientPromise: Promise<LitNodeClient> | null = null;
 
