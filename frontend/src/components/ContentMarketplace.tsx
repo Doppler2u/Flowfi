@@ -386,11 +386,19 @@ export default function ContentMarketplace() {
     if (!address) return;
     setRevealingId(item.id);
     try {
-      // 1. Fetch metadata to get encrypted data
-      const metadata = await fetchMetadata(item.metadataURI);
-      if (!metadata.encryptedData) {
-        addLog({ type: "info", message: "Legacy content: No encrypted secret found." });
-        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: "NO ENCRYPTED SECRET IN METADATA" }));
+      // 1. Fetch metadata — if IPFS fails, show helpful message
+      let metadata: any = null;
+      try {
+        metadata = await fetchMetadata(item.metadataURI);
+      } catch (ipfsErr) {
+        addLog({ type: "info", message: "This content has no encrypted secret (listed without Lit encryption)." });
+        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: "⚠ No encrypted secret — creator did not attach a secret to this content." }));
+        return;
+      }
+
+      if (!metadata?.encryptedData) {
+        addLog({ type: "info", message: "This content has no encrypted secret attached." });
+        setRevealedSecrets(prev => ({ ...prev, [item.id.toString()]: "⚠ No encrypted secret — creator did not attach a secret to this content." }));
         return;
       }
 
@@ -407,7 +415,7 @@ export default function ContentMarketplace() {
       addLog({ type: "info", message: "Decryption Successful! Secret revealed." });
     } catch (e: any) {
       console.error(e);
-      addLog({ type: "error", message: `Access Denied: ${e.message || "Verify NFT ownership"}` });
+      addLog({ type: "error", message: `Decrypt failed: ${e.message || "Verify NFT ownership on Lit network"}` });
     } finally {
       setRevealingId(null);
     }
@@ -675,13 +683,19 @@ export default function ContentMarketplace() {
                             <div className="border-2 border-[#00FF87]/20 bg-[#00FF87]/5 p-3">
                               <div className="flex justify-between items-center mb-2">
                                 <p className="text-[9px] font-black text-[#008A4B] dark:text-[#00FF87] uppercase flex items-center gap-1"><CheckCircle2 size={10} /> Validated Access</p>
-                                {item.payouts[0] && !item.payouts[0].isDisputed && !item.payouts[0].resolved && (
-                                  <button onClick={() => handleDispute(item.id, 0)} disabled={disputingId === item.id} className="text-[8px] font-black uppercase text-[#FF3B3B] hover:underline">Report Scam</button>
+                                {/* Show Report Scam for actual BUYERS (hasAccess=true, not just creator ownership) */}
+                                {item.hasAccess && !item.payouts[0]?.isDisputed && !item.payouts[0]?.resolved && (
+                                  <button onClick={() => handleDispute(item.id, 0)} disabled={disputingId === item.id} className="text-[8px] font-black uppercase text-[#FF3B3B] hover:underline border border-[#FF3B3B]/30 px-1.5 py-0.5">
+                                    {disputingId === item.id ? <Loader2 size={8} className="animate-spin inline mr-1" /> : null}
+                                    ⚑ Report Scam
+                                  </button>
                                 )}
                               </div>
                               <div className="flex flex-col gap-2">
                                 <p className="text-[10px] font-mono text-[var(--text-main)] opacity-80 break-all p-2 bg-[var(--bg-page)] border border-[#00FF87]/20">
-                                  {item.payouts[0]?.isDisputed ? "[ DISPUTE OPEN: GENLAYER AI JURY DELIBERATING... ]" : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
+                                  {item.payouts[0]?.isDisputed
+                                    ? "[ DISPUTE OPEN — GENLAYER AI JURY DELIBERATING... ]"
+                                    : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
                                 </p>
                                 {!revealedSecrets[item.id.toString()] && !item.payouts[0]?.isDisputed && (
                                   <button onClick={() => handleReveal(item)} disabled={revealingId === item.id} className="brut-btn brut-btn-green w-full text-[10px] h-8">
