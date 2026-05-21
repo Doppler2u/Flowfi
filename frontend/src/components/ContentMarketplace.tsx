@@ -550,7 +550,7 @@ export default function ContentMarketplace() {
   const isDisabled = !isConnected;
 
   return (
-    <div className="brut-card flex flex-col h-full">
+    <div className="brut-card flex flex-col" style={{ maxHeight: 'calc(100vh - 160px)', minHeight: '600px' }}>
       {/* Experimental Features Modal */}
       {showWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
