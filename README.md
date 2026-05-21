@@ -1,7 +1,7 @@
 # FlowFi 🌊
 ### Decentralized Trust & Privacy Marketplace on Arc Network
 
-**FlowFi** is a state-of-the-art Web3 platform designed to facilitate secure, encrypted, and trustless digital asset trading. It leverages the **Arc Testnet** for high-speed transactions and **Lit Protocol** for autonomous privacy gating.
+**FlowFi** is a state-of-the-art Web3 platform designed to facilitate secure, encrypted, and trustless digital asset trading. It leverages the **Arc Testnet** for high-speed transactions, **Lit Protocol** for autonomous privacy gating, and **GenLayer** for decentralized AI dispute arbitration.
 
 ![FlowFi Dashboard](./frontend/public/screenshot.png)
 
@@ -37,6 +37,8 @@ A visual identity that matches the precision of the code:
 
 - **L1 Blockchain**: Arc Testnet (RPC: `rpc.testnet.arc.network`)
 - **Privacy Engine**: Lit Protocol (`datil` network)
+- **AI Arbitration**: GenLayer Studionet (GenVM Intelligent Contracts)
+- **Oracle Bridge**: Node.js Relayer (deployed on Railway)
 - **Frontend**: Next.js 15 (App Router), Tailwind CSS v4, Viem v2
 - **Data Layer**: IPFS (via Pinata) for permissionless metadata storage
 - **Design**: Refined Brutalism (Space Grotesk & Space Mono)
@@ -45,9 +47,9 @@ A visual identity that matches the precision of the code:
 
 ## 🤖 Phase 3: Autonomous AI Arbitration (Live)
 FlowFi has successfully integrated the **GenLayer Network** to completely decentralize the dispute resolution process, eliminating the need for a central administrator.
-- **GenVM Intelligent Contracts**: When a dispute is raised, an off-chain Python contract (`FlowFiArbiter.py`) executing on GenLayer's Studionet automatically evaluates the disputed content metadata.
-- **Oracle Bridge**: A highly-optimized Node.js Relayer automatically pipes `DisputeRaised` events from the Arc Testnet to GenLayer.
-- **Optimistic AI Consensus**: Instead of a human manually reviewing disputes, multiple LLMs act as independent jurors on GenLayer. They analyze the metadata, come to a consensus on whether the transaction was a "Creator Scam" or "Buyer Fraud", and automatically execute the refund via the Oracle Bridge back on the Arc Testnet.
+- **GenVM Intelligent Contracts**: When a dispute is raised, a Python contract (`FlowFiArbiter.py`) executing on GenLayer's Studionet automatically evaluates the disputed content metadata using multiple LLM validators.
+- **Oracle Bridge**: A Node.js Relayer deployed on Railway automatically pipes `DisputeRaised` events from the Arc Testnet to GenLayer, and routes verdicts back to settle funds.
+- **Optimistic AI Consensus**: Multiple LLMs act as independent jurors on GenLayer. They analyze the IPFS metadata and delivery URL, reach consensus on whether the transaction was a "Creator Scam" or "Buyer Fraud", and automatically execute the refund via the Oracle Bridge back on the Arc Testnet.
 
 ---
 
@@ -78,13 +80,37 @@ PINATA_JWT="your_pinata_jwt"
 npm run dev
 ```
 
+### 3. Relayer (Oracle Bridge)
+```bash
+cd relayer
+
+# Install dependencies
+npm install
+
+# Configure environment (.env)
+PRIVATE_KEY="your_private_key"
+FLOWFI_CONTRACT_ARC="0xaE933dE72586F4dA6be93C64D99fB702d3a34200"
+ARBITER_CONTRACT_GENLAYER="0x06E4B36E19dB89A821d0F852868E868f992Dd0e4"
+
+# Deploy GenLayer contract (only needed if redeploying)
+node deploy.js
+
+# Start the relayer
+node relayer.js
+```
+
 ---
 
 ## 📡 Deployment Data
 
-- **Chain ID**: `5042002` (Arc Testnet)
-- **Contract Address**: `0xaE933dE72586F4dA6be93C64D99fB702d3a34200`
-- **Explorer**: [testnet.arcscan.app](https://testnet.arcscan.app)
+| Component | Network | Address |
+|-----------|---------|---------|
+| **FlowFi Contract** | Arc Testnet (Chain ID: `5042002`) | `0xaE933dE72586F4dA6be93C64D99fB702d3a34200` |
+| **FlowFiArbiter** | GenLayer Studionet | `0x06E4B36E19dB89A821d0F852868E868f992Dd0e4` |
+| **Relayer** | Railway (Cloud) | Auto-deployed via GitHub |
+
+- **Arc Explorer**: [testnet.arcscan.app](https://testnet.arcscan.app)
+- **GenLayer Explorer**: [studio.genlayer.com](https://studio.genlayer.com)
 
 ---
 
