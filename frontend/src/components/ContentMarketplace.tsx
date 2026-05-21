@@ -207,7 +207,6 @@ export default function ContentMarketplace() {
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      // Apply a 10-block buffer to avoid hitting out-of-sync RPC nodes (Race Condition Shield)
       const safeTip = currentBlock > 10n ? currentBlock - 10n : currentBlock;
       
       const lookbackLimit = targetBlocks || (15000n);
@@ -216,19 +215,14 @@ export default function ContentMarketplace() {
 
       let currentTo = safeTip;
       const uniqueEvents = new Map();
-      
-      addLog({ type: "info", message: `Protocol Scan: Syncing history to block ${finalStopBlock}...` });
-
-      // Using a much smaller chunk size (1000) for maximum reliability across different RPC providers
       const SAFE_CHUNK = 1000n;
 
+      // ── Phase 1: Scan events (fast, just reading logs) ───────────────
       while (currentTo > finalStopBlock) {
         const currentFrom = currentTo > SAFE_CHUNK ? currentTo - SAFE_CHUNK : finalStopBlock;
         const scanFrom = currentFrom < finalStopBlock ? finalStopBlock : currentFrom;
-
         if (scanFrom >= currentTo) break;
 
-        // Manual hex-encoding for optimal RPC compatibility
         const fromHex = `0x${scanFrom.toString(16)}`;
         const toHex = `0x${currentTo.toString(16)}`;
 
@@ -240,87 +234,69 @@ export default function ContentMarketplace() {
 
         for (const log of logs) {
           try {
-            const decoded = decodeEventLog({
-              abi: FlowFiABI,
-              data: log.data,
-              topics: log.topics,
-            });
-            
+            const decoded = decodeEventLog({ abi: FlowFiABI, data: log.data, topics: log.topics });
             if (decoded.eventName === "ContentCreated") {
               const args = decoded.args as any;
               const id = args.contentId;
               if (id !== undefined) {
                 uniqueEvents.set(id.toString(), {
-                  id,
-                  creator: args.creator,
-                  price: args.price,
-                  metadataURI: args.metadataURI
+                  id, creator: args.creator, price: args.price, metadataURI: args.metadataURI
                 });
               }
             }
           } catch (e) {}
         }
-        
         currentTo = scanFrom;
       }
 
-      const items: GalleryItem[] = [];
-      for (const eventData of uniqueEvents.values()) {
-        const id = eventData.id as bigint;
-        const creator = eventData.creator as string;
-        const price = eventData.price as bigint;
-        const metadataURI = eventData.metadataURI as string;
+      const allEvents = Array.from(uniqueEvents.values());
+      addLog({ type: "info", message: `Scan Complete: Found ${allEvents.length} items. Loading metadata...` });
 
-        let hasAccess = false;
-        if (address) {
-          try {
-            const balance = await publicClient.readContract({
-              address: CONTRACT_ADDRESS,
-              abi: FlowFiABI,
-              functionName: "balanceOf",
-              args: [address, id],
-            }) as bigint;
-            hasAccess = balance > 0n;
-          } catch (e) {}
-        }
+      // ── Phase 2: Fetch all item details in PARALLEL ──────────────────
+      const results = await Promise.allSettled(
+        allEvents.map(async (eventData) => {
+          const id = eventData.id as bigint;
+          const creator = eventData.creator as string;
+          const price = eventData.price as bigint;
+          const metadataURI = eventData.metadataURI as string;
 
-        let title = `Content #${id.toString()}`;
-        let description = "Protocol registered asset";
-        let type: ContentType = "Article";
-        
-        try {
-          if (metadataURI.startsWith("ipfs://")) {
-            const cid = metadataURI.replace("ipfs://", "");
-            const meta = await fetchMetadata(cid);
-            title = meta.title;
-            description = meta.description;
-            type = meta.type as ContentType;
-          }
-        } catch (e) {
-          console.warn(`Meta fetch failed for ${id}`, e);
-        }
+          let hasAccess = false;
+          let title = `Content #${id.toString()}`;
+          let description = "Protocol registered asset";
+          let type: ContentType = "Article";
+          let payouts: PayoutData[] = [];
 
-        // Fetch payouts/escrow info for the management tab or detail view
-        let payouts: PayoutData[] = [];
-        try {
-          // In a real indexer this would be one call, here we just check if it exists
-          const p = await publicClient.readContract({
-            address: CONTRACT_ADDRESS,
-            abi: FlowFiABI,
-            functionName: "contentPayouts",
-            args: [id, 0n],
-          }) as [string, bigint, bigint, bool, bool];
-          payouts.push({ creator: p[0], amount: p[1], releaseTime: p[2], isDisputed: p[3], resolved: p[4] });
-        } catch (e) {}
+          // All three fetches run in parallel per item
+          await Promise.allSettled([
+            // Access check
+            address
+              ? publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "balanceOf", args: [address, id] })
+                  .then((bal) => { hasAccess = (bal as bigint) > 0n; })
+              : Promise.resolve(),
+            // IPFS metadata
+            metadataURI.startsWith("ipfs://")
+              ? fetchMetadata(metadataURI.replace("ipfs://", ""))
+                  .then((meta) => { title = meta.title; description = meta.description; type = meta.type as ContentType; })
+              : Promise.resolve(),
+            // Payout check
+            publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "contentPayouts", args: [id, 0n] })
+              .then((p: any) => { payouts.push({ creator: p[0], amount: p[1], releaseTime: p[2], isDisputed: p[3], resolved: p[4] }); })
+              .catch(() => {}),
+          ]);
 
-        items.push({ id, creator, price, title, description, type, metadataURI, hasAccess, payouts });
-      }
+          return { id, creator, price, title, description, type, metadataURI, hasAccess, payouts };
+        })
+      );
+
+      const items: GalleryItem[] = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => (r as PromiseFulfilledResult<GalleryItem>).value);
 
       setGalleryItems(items.reverse());
-      addLog({ type: "info", message: `Scan Complete: ${items.length} assets recovered.` });
+      addLog({ type: "info", message: `Gallery ready: ${items.length} assets loaded.` });
     } catch (e: any) {
       console.error("Gallery fetch error:", e);
-      addLog({ type: "error", message: `Scanner Error: ${e.message?.slice(0, 100)}...` });
+      addLog({ type: "error", message: `Scanner Error: ${e.message?.slice(0, 100)}` });
     } finally {
       setLoadingGallery(false);
     }
@@ -550,7 +526,7 @@ export default function ContentMarketplace() {
   const isDisabled = !isConnected;
 
   return (
-    <div className="brut-card flex flex-col" style={{ maxHeight: 'calc(100vh - 160px)', minHeight: '600px' }}>
+    <div className="brut-card flex flex-col" style={{ height: '780px' }}>
       {/* Experimental Features Modal */}
       {showWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
