@@ -70,7 +70,7 @@ const COLORS = {
 export default function ContentMarketplace() {
   const { address, isConnected, walletClient, publicClient, addLog, refreshBalance, contractBalance } = useWeb3();
 
-  const [activeTab, setActiveTab] = useState<"gallery" | "my-content" | "create" | "staking">("gallery");
+  const [activeTab, setActiveTab] = useState<"gallery" | "my-content">("gallery");
 
   // Create State
   const [createId, setCreateId] = useState("");
@@ -195,7 +195,7 @@ export default function ContentMarketplace() {
 
   // Load Gallery
   useEffect(() => {
-    if (activeTab === "gallery" || activeTab === "my-content" || activeTab === "staking") {
+    if (activeTab === "gallery" || activeTab === "my-content") {
       fetchGallery();
     }
   }, [activeTab, publicClient, address, isConnected]);
@@ -619,294 +619,55 @@ export default function ContentMarketplace() {
               Architecture Overview
             </button>
             <div className="hidden sm:block border-l-2 border-[var(--border-main)] pl-4 text-[9px] font-mono leading-tight">
-              <p><span className="text-[#00FF87] font-bold">LIVE:</span> Escrow | Staking | Lit Encryption</p>
-              <p><span className="text-[#FFE600] font-bold mt-1 inline-block">COMING SOON:</span> AI Validation | Decentralized Juries</p>
+              <p><span className="text-[#00FF87] font-bold">LIVE:</span> Escrow | Lit Encryption | AI Arbitration</p>
+              <p><span className="text-[#00D9FF] font-bold mt-1 inline-block">POWERED BY:</span> GenLayer Studionet | Arc Testnet</p>
             </div>
           </div>
         </div>
         
-        <div className="flex border-2 border-[var(--border-main)] w-full overflow-x-auto scrollbar-none shrink-0">
+        <div className="flex border-2 border-[var(--border-main)] w-full shrink-0">
           <button
             onClick={() => setActiveTab("gallery")}
-            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === "gallery" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === "gallery" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
           >
             Gallery
           </button>
           <button
             onClick={() => setActiveTab("my-content")}
-            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest border-x-2 border-[var(--border-main)] transition-all whitespace-nowrap ${activeTab === "my-content" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest border-l-2 border-[var(--border-main)] transition-all ${activeTab === "my-content" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
           >
             Library
-          </button>
-          <button
-            onClick={() => setActiveTab("create")}
-            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest border-r-2 border-[var(--border-main)] transition-all whitespace-nowrap ${activeTab === "create" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
-          >
-            Register
-          </button>
-          <button
-            onClick={() => setActiveTab("staking")}
-            className={`flex-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === "staking" ? "bg-[#FFE600] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
-          >
-            Staking
           </button>
         </div>
         <div className="border-b-2 border-[var(--border-main)] w-full" />
       </div>
 
       <div className="flex-1 overflow-hidden mt-6">
-        {activeTab === "create" ? (
-          !isStaked ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 p-8 border-4 border-dashed border-[#222]">
-              <ShieldAlert size={48} className="text-[#FFE600] animate-pulse" />
-              <div className="space-y-2">
-                <h3 className="text-lg font-black uppercase tracking-tighter">Creator Staking Required</h3>
-                <p className="text-[10px] font-mono text-[#888] max-w-[240px] leading-relaxed">
-                  YOU MUST HAVE AT LEAST 5 USDC STAKED IN THE PROTOCOL TO REGISTER NEW ASSETS. THIS PROTECTS THE MARKETPLACE FROM SCAMS.
-                </p>
-              </div>
-              <button 
-                onClick={() => setActiveTab("staking")}
-                className="brut-btn brut-btn-yellow px-8"
-              >
-                Go to Staking
-              </button>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col space-y-6 overflow-y-auto pr-2 scrollbar-thin">
-              <p className="text-[11px] font-mono text-[#555]">// Register new pay-to-access asset on-chain</p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#888] uppercase tracking-widest">Content ID</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      placeholder="E.G. 42"
-                      value={createId}
-                      onChange={(e) => setCreateId(e.target.value)}
-                      disabled={isDisabled}
-                      className={`brut-input flex-1 ${isIdTaken ? "error" : ""}`}
-                    />
-                    <button 
-                      onClick={randomizeId}
-                      type="button"
-                      className="px-2 py-2 bg-black text-[#FFE600] border-2 border-[var(--border-main)] hover:border-[#FFE600] text-[8px] font-black uppercase transition-all"
-                      title="Generate Random ID"
-                    >
-                      Random
-                    </button>
-                  </div>
-                  {isIdTaken && <p className="text-[9px] font-mono text-[#FF3B3B]">// ID already exists in system</p>}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-[#888] uppercase tracking-widest">Price (USDC)</label>
-                  <input
-                    type="number"
-                    placeholder="0.00"
-                    value={createPrice}
-                    onChange={(e) => setCreatePrice(e.target.value)}
-                    disabled={isDisabled}
-                    className="brut-input"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-[#888] uppercase tracking-widest">Title</label>
-                <input
-                  type="text"
-                  placeholder="CONTENT TITLE"
-                  value={createTitle}
-                  onChange={(e) => setCreateTitle(e.target.value)}
-                  disabled={isDisabled}
-                  className="brut-input"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-[#888] uppercase tracking-widest">Category</label>
-                <select
-                  value={createType}
-                  onChange={(e) => setCreateType(e.target.value as ContentType)}
-                  disabled={isDisabled}
-                  className="brut-input bg-[#111]"
-                >
-                  <option value="Article">ARTICLE / TEXT</option>
-                  <option value="Video">VIDEO STREAM</option>
-                  <option value="Image">DIGITAL IMAGE</option>
-                  <option value="Code">SOURCE CODE</option>
-                  <option value="Audio">AUDIO ASSET</option>
-                </select>
-              </div>
-
-              <div className="space-y-2 pb-4">
-                <label className="text-[10px] font-black text-[#888] uppercase tracking-widest">Description</label>
-                <textarea
-                  placeholder="DESCRIBE THE CONTENT FOR POTENTIAL BUYERS..."
-                  value={createDesc}
-                  onChange={(e) => setCreateDesc(e.target.value)}
-                  disabled={isDisabled}
-                  rows={2}
-                  className="brut-input resize-none"
-                />
-              </div>
-
-              <div className="space-y-2 pb-4 p-4 border-2 border-dashed border-[#FFE600]/30 bg-[#FFE600]/5">
-                <label className="text-[10px] font-black text-[#FFE600] uppercase tracking-widest flex items-center gap-2">
-                  <LockKeyhole size={12} /> Secret Content (Encrypted)
-                </label>
-                <p className="text-[8px] font-mono text-[#888] mb-2 uppercase tracking-tighter">
-                  THIS CONTENT WILL BE ENCRYPTED BY LIT PROTOCOL. ONLY NFT HOLDERS CAN DECRYPT AND VIEW IT.
-                </p>
-                <textarea
-                  placeholder="PRIVATE URL, KEY, OR SECRET MESSAGE..."
-                  value={createSecret}
-                  onChange={(e) => setCreateSecret(e.target.value)}
-                  disabled={isDisabled}
-                  rows={2}
-                  className="brut-input resize-none border-[#FFE600]/30 focus:border-[#FFE600]"
-                />
-              </div>
-              
-              <button
-                onClick={handleCreateContent}
-                disabled={isDisabled || !createId || !createPrice || !createTitle || !createDesc || !createSecret || loadingCreate || isIdTaken || checkingId}
-                className="brut-btn brut-btn-yellow w-full sticky bottom-0"
-              >
-                {loadingCreate ? <Loader2 size={14} className="animate-spin text-black" /> : <PlusCircle size={14} className="text-black" />}
-                Confirm Registration
-              </button>
-            </div>
-          )
-        ) : activeTab === "staking" ? (
-          <div className="h-full flex flex-col space-y-6 overflow-y-auto pr-2 scrollbar-thin">
-            <div className="border-4 border-[var(--border-main)] p-6 bg-black flex flex-col items-center justify-center text-center space-y-4">
-              <div className="p-4 bg-[#FFE600] text-black rounded-full">
-                <ShieldAlert size={32} />
-              </div>
-              <h2 className="text-xl font-black uppercase tracking-tighter">Creator Staking</h2>
-              <p className="text-[10px] font-mono text-[#888] leading-relaxed max-w-[280px]">
-                TO PREVENT SCAMS AND LOW-QUALITY SPAM, ALL CREATORS MUST STAKE A MINIMUM OF 5 USDC. THIS COLLATERAL IS SLASHABLE IN CASE OF VERIFIED FRAUD.
-              </p>
-              
-              <div className="flex flex-col gap-2 w-full mt-4">
-                <div className="flex justify-between items-center px-4 py-3 border-2 border-[var(--border-main)]">
-                  <span className="text-[10px] font-black uppercase">Current Stake</span>
-                  <span className="text-xs font-mono font-bold text-[#FFE600]">{stakedBalance} USDC</span>
-                </div>
-                
-                {!isStaked ? (
-                  <button 
-                    onClick={handleStake}
-                    disabled={loadingStake}
-                    className="brut-btn brut-btn-yellow w-full"
-                  >
-                    {loadingStake ? <Loader2 size={14} className="animate-spin mr-2" /> : <Coins size={14} className="mr-2" />}
-                    Stake 5 USDC to Unlock
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <div className="p-3 border-2 border-[#00FF87] bg-[#00FF87]/5 text-[#00FF87] text-[10px] font-black uppercase flex items-center justify-center gap-2">
-                      <CheckCircle2 size={14} /> Creator Status Verified
-                    </div>
-                    <button 
-                      onClick={handleUnstake}
-                      disabled={loadingUnstake}
-                      className="brut-btn border-[#555] text-[#888] bg-transparent hover:border-white hover:text-white w-full h-8"
-                    >
-                      {loadingUnstake ? <Loader2 size={12} className="animate-spin mr-2 inline-block" /> : null}
-                      Unstake Collateral
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-[10px] font-black uppercase text-[#555] tracking-widest flex items-center gap-2">
-                <History size={12} /> Staking History
-              </h3>
-              
-              <div className="space-y-2">
-                {loadingHistory ? (
-                  <div className="p-4 border-2 border-dashed border-[#222] flex justify-center">
-                    <Loader2 size={16} className="animate-spin text-[#333]" />
-                  </div>
-                ) : stakingHistory.length === 0 ? (
-                  <div className="border-2 border-dashed border-[#222] p-8 flex flex-col items-center justify-center text-[#333]">
-                    <p className="text-[10px] font-mono uppercase">No staking history found</p>
-                  </div>
-                ) : (
-                  stakingHistory.map((h, i) => (
-                    <div key={i} className="border-2 border-[var(--border-main)] p-3 bg-[var(--bg-card)] flex justify-between items-center group">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-1.5 h-6 ${h.type === 'STAKE' ? 'bg-[#00FF87]' : 'bg-[#FF3B3B]'}`} />
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-tight">{h.type} COLLATERAL</p>
-                          <p className="text-[9px] font-mono text-[#555] uppercase mt-0.5">{formatUnits(h.amount, 18)} USDC</p>
-                        </div>
-                      </div>
-                      <a 
-                        href={`https://testnet.arcscan.app/tx/${h.txHash || h.hash}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="p-1.5 border-2 border-transparent group-hover:border-[#FFE600] group-hover:text-[#FFE600] transition-all"
-                      >
-                        <History size={12} />
-                      </a>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
           <div className="h-full flex flex-col space-y-4">
             <div className={`flex justify-between items-center text-[10px] font-mono ${loadingGallery ? "text-[#FFE600]" : "text-[#555]"}`}>
               <p>{loadingGallery ? "Decrypting logs..." : "Search range: Last 9.5K blocks"}</p>
               <div className="flex items-center gap-4">
-                <button 
-                  onClick={deepScan} 
-                  disabled={isDeepScanning || loadingGallery}
-                  className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black"
-                >
+                <button onClick={deepScan} disabled={isDeepScanning || loadingGallery} className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black">
                   Rescue Scan {isDeepScanning && <Loader2 size={10} className="animate-spin" />}
                 </button>
                 <div className="w-[1px] h-3 bg-[#222]" />
-                <button 
-                  onClick={() => fetchGallery()} 
-                  className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black"
-                  disabled={loadingGallery}
-                >
+                <button onClick={() => fetchGallery()} className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black" disabled={loadingGallery}>
                   Sync {loadingGallery && <Loader2 size={10} className="animate-spin" />}
                 </button>
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
               {(() => {
                 const displayedItems = galleryItems.filter((item) => {
                   const isOwned = item.hasAccess || address?.toLowerCase() === item.creator.toLowerCase();
                   return activeTab === "gallery" ? !isOwned : isOwned;
                 });
-
                 if (loadingGallery && galleryItems.length === 0) {
-                  return (
-                    <div className="h-32 flex items-center justify-center border-2 border-dashed border-[#222]">
-                      <Loader2 size={24} className="animate-spin text-[#333]" />
-                    </div>
-                  );
+                  return (<div className="h-32 flex items-center justify-center border-2 border-dashed border-[#222]"><Loader2 size={24} className="animate-spin text-[#333]" /></div>);
                 }
-
                 if (displayedItems.length === 0) {
-                  return (
-                    <div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-[#222]">
-                      <p className="text-[10px] font-mono text-[#444] uppercase tracking-widest">No data available</p>
-                    </div>
-                  );
+                  return (<div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-[#222]"><p className="text-[10px] font-mono text-[#444] uppercase tracking-widest">No data available</p></div>);
                 }
-
                 return (
                   <div className="grid grid-cols-1 gap-4 pb-4">
                     {displayedItems.map((item) => {
@@ -914,60 +675,40 @@ export default function ContentMarketplace() {
                       const isOwned = item.hasAccess || address?.toLowerCase() === item.creator.toLowerCase();
                       const insufficient = (parseFloat(contractBalance || "0") < Number(item.price) / 1e18);
                       const isLoadingUnlock = unlockingId === item.id;
-
                       return (
                         <div key={item.id.toString()} className="border-2 border-[var(--border-main)] bg-[var(--bg-page)] p-4 flex flex-col gap-4 relative">
                           {isOwned && <div className="absolute top-0 right-0 p-1 bg-[#00FF87] text-black text-[8px] font-black uppercase">Owned</div>}
-                          
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
-                              <div className={`p-2 border-2 ${COLORS[item.type]}`}>
-                                <Icon size={14} />
-                              </div>
+                              <div className={`p-2 border-2 ${COLORS[item.type]}`}><Icon size={14} /></div>
                               <div>
                                 <h3 className="text-xs font-black text-[var(--text-main)] uppercase tracking-tight">{item.title}</h3>
                                 <p className="text-[9px] font-mono text-[var(--text-dim)] mt-0.5">#{item.id.toString()} | BY {item.creator.slice(0,6)}...{item.creator.slice(-4)}</p>
                               </div>
                             </div>
-                            <div className="text-[10px] font-black text-[#FFE600] font-mono whitespace-nowrap">
-                              {(Number(item.price) / 1e18).toFixed(4)} USDC
-                            </div>
+                            <div className="text-[10px] font-black text-[#FFE600] font-mono whitespace-nowrap">{(Number(item.price) / 1e18).toFixed(4)} USDC</div>
                           </div>
-
                           <p className="text-[10px] font-mono text-[#888] leading-normal">{item.description}</p>
-                          
                           {item.payouts.length > 0 && !isOwned && (
                             <div className="flex items-center gap-2 px-2 py-1 bg-[#111] border border-[#333] w-fit">
                               <Timer size={10} className="text-[#FFE600]" />
                               <span className="text-[8px] font-mono text-[#FFE600] uppercase">Escrow Active</span>
                             </div>
                           )}
-
                           {isOwned ? (
                             <div className="border-2 border-[#00FF87]/20 bg-[#00FF87]/5 p-3">
                               <div className="flex justify-between items-center mb-2">
                                 <p className="text-[9px] font-black text-[#008A4B] dark:text-[#00FF87] uppercase flex items-center gap-1"><CheckCircle2 size={10} /> Validated Access</p>
                                 {item.payouts[0] && !item.payouts[0].isDisputed && !item.payouts[0].resolved && (
-                                  <button 
-                                    onClick={() => handleDispute(item.id, 0)}
-                                    disabled={disputingId === item.id}
-                                    className="text-[8px] font-black uppercase text-[#FF3B3B] hover:underline"
-                                  >
-                                    Report Scam
-                                  </button>
+                                  <button onClick={() => handleDispute(item.id, 0)} disabled={disputingId === item.id} className="text-[8px] font-black uppercase text-[#FF3B3B] hover:underline">Report Scam</button>
                                 )}
                               </div>
                               <div className="flex flex-col gap-2">
                                 <p className="text-[10px] font-mono text-[var(--text-main)] opacity-80 break-all p-2 bg-[var(--bg-page)] border border-[#00FF87]/20">
                                   {item.payouts[0]?.isDisputed ? "[ DISPUTE OPEN: GENLAYER AI JURY DELIBERATING... ]" : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
                                 </p>
-                                
                                 {!revealedSecrets[item.id.toString()] && !item.payouts[0]?.isDisputed && (
-                                  <button
-                                    onClick={() => handleReveal(item)}
-                                    disabled={revealingId === item.id}
-                                    className="brut-btn brut-btn-green w-full text-[10px] h-8"
-                                  >
+                                  <button onClick={() => handleReveal(item)} disabled={revealingId === item.id} className="brut-btn brut-btn-green w-full text-[10px] h-8">
                                     {revealingId === item.id ? <Loader2 size={10} className="animate-spin mr-2" /> : <LockKeyhole size={10} className="mr-2" />}
                                     Reveal Secret Content
                                   </button>
@@ -975,11 +716,7 @@ export default function ContentMarketplace() {
                               </div>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => handleUnlock(item.id, item.price)}
-                              disabled={isDisabled || insufficient || isLoadingUnlock}
-                              className={`brut-btn w-full ${insufficient ? "brut-btn-red opacity-50" : "brut-btn-white"}`}
-                            >
+                            <button onClick={() => handleUnlock(item.id, item.price)} disabled={isDisabled || insufficient || isLoadingUnlock} className={`brut-btn w-full ${insufficient ? "brut-btn-red opacity-50" : "brut-btn-white"}`}>
                               {isLoadingUnlock ? <Loader2 size={12} className="animate-spin" /> : <LockKeyhole size={12} />}
                               {insufficient ? "Insufficient Funds" : "Unlock Asset"}
                             </button>
@@ -992,7 +729,6 @@ export default function ContentMarketplace() {
               })()}
             </div>
           </div>
-        )}
       </div>
     </div>
   );
