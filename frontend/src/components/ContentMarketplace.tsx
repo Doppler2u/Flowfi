@@ -51,6 +51,7 @@ interface PayoutData {
   isDisputed: boolean;
   resolved: boolean;
   refunded?: boolean;
+  disputeTxHash?: string;
 }
 
 const TYPE_ICONS = {
@@ -213,6 +214,7 @@ export default function ContentMarketplace() {
       // ── Load cache from localStorage ─────────────────────────────────
       let cachedEvents: Record<string, any> = {};
       let cachedRefunds: Record<string, boolean> = {};
+      let cachedDisputeTxs: Record<string, string> = {};
       let lastScannedBlock = DEPLOYMENT_BLOCK;
 
       try {
@@ -221,6 +223,7 @@ export default function ContentMarketplace() {
           const parsed = JSON.parse(raw);
           cachedEvents = parsed.events || {};
           cachedRefunds = parsed.refunds || {};
+          cachedDisputeTxs = parsed.disputeTxs || {};
           lastScannedBlock = BigInt(parsed.lastBlock || DEPLOYMENT_BLOCK.toString());
         }
       } catch {}
@@ -228,6 +231,7 @@ export default function ContentMarketplace() {
       // If we have cached data, show it instantly while we scan new blocks
       const uniqueEvents = new Map<string, any>(Object.entries(cachedEvents));
       const refundMap = new Map<string, boolean>(Object.entries(cachedRefunds));
+      const disputeTxMap = new Map<string, string>(Object.entries(cachedDisputeTxs));
 
       if (uniqueEvents.size > 0) {
         addLog({ type: "info", message: `Loaded ${uniqueEvents.size} cached items. Checking for new content...` });
@@ -270,6 +274,11 @@ export default function ContentMarketplace() {
               if (args.contentId !== undefined) {
                 refundMap.set(`${args.contentId.toString()}_${args.payoutIndex.toString()}`, args.refunded);
               }
+            } else if (decoded.eventName === "DisputeRaised") {
+              const args = decoded.args as any;
+              if (args.contentId !== undefined) {
+                disputeTxMap.set(`${args.contentId.toString()}_${args.payoutIndex.toString()}`, log.transactionHash);
+              }
             }
           } catch (e) {}
         }
@@ -284,9 +293,12 @@ export default function ContentMarketplace() {
         });
         const refundsObj: Record<string, boolean> = {};
         refundMap.forEach((v, k) => { refundsObj[k] = v; });
+        const disputeTxsObj: Record<string, string> = {};
+        disputeTxMap.forEach((v, k) => { disputeTxsObj[k] = v; });
         localStorage.setItem(CACHE_KEY, JSON.stringify({
           events: eventsObj,
           refunds: refundsObj,
+          disputeTxs: disputeTxsObj,
           lastBlock: safeTip.toString(),
         }));
       } catch {}
@@ -327,7 +339,7 @@ export default function ContentMarketplace() {
               : Promise.resolve(),
             // Payout check
             publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "contentPayouts", args: [id, 0n] })
-              .then((p: any) => { payouts.push({ creator: p[0], amount: p[2], releaseTime: p[3], isDisputed: p[4], resolved: p[5], refunded: refundMap.get(`${id.toString()}_0`) }); })
+              .then((p: any) => { payouts.push({ creator: p[0], amount: p[2], releaseTime: p[3], isDisputed: p[4], resolved: p[5], refunded: refundMap.get(`${id.toString()}_0`), disputeTxHash: disputeTxMap.get(`${id.toString()}_0`) }); })
               .catch(() => {}),
           ]);
 
@@ -750,7 +762,7 @@ export default function ContentMarketplace() {
                                         ? (item.payouts[0]?.refunded ? "[ VERDICT: BUYER REFUNDED (SCAM DETECTED) ]" : "[ VERDICT: DISPUTE DISMISSED (CONTENT VALID) ]")
                                         : (
                                             <span>
-                                              [ DISPUTE OPEN — <a href="https://studio.genlayer.com/contracts/0x06E4B36E19dB89A821d0F852868E868f992Dd0e4" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#00FF87] transition-colors">GENLAYER AI JURY DELIBERATING... ↗</a> ]
+                                              [ DISPUTE OPEN — <a href={`https://explorer-studio.genlayer.com/transactions/${item.payouts[0]?.disputeTxHash || ""}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-[#00FF87] transition-colors">GENLAYER AI JURY DELIBERATING... ↗</a> ]
                                             </span>
                                           )
                                     : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
