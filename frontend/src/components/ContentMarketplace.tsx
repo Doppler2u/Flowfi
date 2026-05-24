@@ -28,7 +28,7 @@ import InfoTooltip from "./InfoTooltip";
 
 type ContentType = "Article" | "Video" | "Image" | "Code" | "Audio";
 
-let DEPLOYMENT_BLOCK = 5180000n; // Set a safe starting block for Arc Testnet
+const DEPLOYMENT_BLOCK = 43300000n; // Block when new FlowFi contract was deployed
 const CHUNK_SIZE = 5000n;
 
 interface GalleryItem {
@@ -201,18 +201,16 @@ export default function ContentMarketplace() {
     }
   }, [activeTab, publicClient, address, isConnected]);
   
-  const [isDeepScanning, setIsDeepScanning] = useState(false);
 
-  const fetchGallery = useCallback(async (targetBlocks?: bigint) => {
+  const fetchGallery = useCallback(async () => {
     if (!publicClient) return;
     setLoadingGallery(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
       const safeTip = currentBlock > 10n ? currentBlock - 10n : currentBlock;
-      
-      const lookbackLimit = targetBlocks || (15000n);
-      const stopBlock = safeTip > lookbackLimit ? safeTip - lookbackLimit : DEPLOYMENT_BLOCK;
-      const finalStopBlock = stopBlock < DEPLOYMENT_BLOCK ? DEPLOYMENT_BLOCK : stopBlock;
+
+      // Always scan from contract deployment — guarantees all content is always visible
+      const finalStopBlock = DEPLOYMENT_BLOCK;
 
       let currentTo = safeTip;
       const uniqueEvents = new Map();
@@ -309,20 +307,7 @@ export default function ContentMarketplace() {
     }
   }, [publicClient, addLog, address]);
 
-  const deepScan = async () => {
-    if (!publicClient || isDeepScanning) return;
-    setIsDeepScanning(true);
-    addLog({ type: "info", message: "Starting Deep Rescue Scan (100,000 blocks)..." });
-    try {
-    // Full history scan (approx 150k blocks)
-    await fetchGallery(200000n);
-      addLog({ type: "info", message: "Deep Scan Complete." });
-    } catch (e) {
-      addLog({ type: "error", message: "Deep Scan failed. Network busy." });
-    } finally {
-      setIsDeepScanning(false);
-    }
-  };
+
 
   const randomizeId = () => {
     // Generate a high-entropy random number to prevent collisions
@@ -658,12 +643,8 @@ export default function ContentMarketplace() {
       <div className="flex-1 overflow-hidden mt-6">
           <div className="h-full flex flex-col space-y-4">
             <div className={`flex justify-between items-center text-[10px] font-mono ${loadingGallery ? "text-[#FFE600]" : "text-[#555]"}`}>
-              <p>{loadingGallery ? "Decrypting logs..." : "Search range: Last 9.5K blocks"}</p>
+              <p>{loadingGallery ? "Scanning full history..." : "Search range: Full History"}</p>
               <div className="flex items-center gap-4">
-                <button onClick={deepScan} disabled={isDeepScanning || loadingGallery} className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black">
-                  Rescue Scan {isDeepScanning && <Loader2 size={10} className="animate-spin" />}
-                </button>
-                <div className="w-[1px] h-3 bg-[#222]" />
                 <button onClick={() => fetchGallery()} className="hover:text-[#FFE600] flex items-center gap-2 uppercase font-black" disabled={loadingGallery}>
                   Sync {loadingGallery && <Loader2 size={10} className="animate-spin" />}
                 </button>
