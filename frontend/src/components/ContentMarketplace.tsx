@@ -30,6 +30,7 @@ type ContentType = "Article" | "Video" | "Image" | "Code" | "Audio";
 
 const DEPLOYMENT_BLOCK = 43300000n; // Block when new FlowFi contract was deployed
 const CHUNK_SIZE = 5000n;
+const CACHE_KEY = "flowfi_gallery_cache_v1";
 
 interface GalleryItem {
   id: bigint;
@@ -209,21 +210,42 @@ export default function ContentMarketplace() {
       const currentBlock = await publicClient.getBlockNumber();
       const safeTip = currentBlock > 10n ? currentBlock - 10n : currentBlock;
 
-      // Always scan from contract deployment — guarantees all content is always visible
-      const finalStopBlock = DEPLOYMENT_BLOCK;
+      // ── Load cache from localStorage ─────────────────────────────────
+      let cachedEvents: Record<string, any> = {};
+      let cachedRefunds: Record<string, boolean> = {};
+      let lastScannedBlock = DEPLOYMENT_BLOCK;
 
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          cachedEvents = parsed.events || {};
+          cachedRefunds = parsed.refunds || {};
+          lastScannedBlock = BigInt(parsed.lastBlock || DEPLOYMENT_BLOCK.toString());
+        }
+      } catch {}
+
+      // If we have cached data, show it instantly while we scan new blocks
+      const uniqueEvents = new Map<string, any>(Object.entries(cachedEvents));
+      const refundMap = new Map<string, boolean>(Object.entries(cachedRefunds));
+
+      if (uniqueEvents.size > 0) {
+        addLog({ type: "info", message: `Loaded ${uniqueEvents.size} cached items. Checking for new content...` });
+      } else {
+        addLog({ type: "info", message: "First load: scanning full history..." });
+      }
+
+      // ── Phase 1: Only scan NEW blocks since last cached block ─────────
+      const scanFrom = lastScannedBlock < safeTip ? lastScannedBlock : safeTip;
       let currentTo = safeTip;
-      const uniqueEvents = new Map();
-      const refundMap = new Map();
-      const SAFE_CHUNK = 1000n;
+      const SAFE_CHUNK = 5000n; // 5x larger chunks = 5x fewer RPC calls
 
-      // ── Phase 1: Scan events (fast, just reading logs) ───────────────
-      while (currentTo > finalStopBlock) {
-        const currentFrom = currentTo > SAFE_CHUNK ? currentTo - SAFE_CHUNK : finalStopBlock;
-        const scanFrom = currentFrom < finalStopBlock ? finalStopBlock : currentFrom;
-        if (scanFrom >= currentTo) break;
+      while (currentTo > scanFrom) {
+        const from = currentTo > SAFE_CHUNK ? currentTo - SAFE_CHUNK : scanFrom;
+        const chunkFrom = from < scanFrom ? scanFrom : from;
+        if (chunkFrom >= currentTo) break;
 
-        const fromHex = `0x${scanFrom.toString(16)}`;
+        const fromHex = `0x${chunkFrom.toString(16)}`;
         const toHex = `0x${currentTo.toString(16)}`;
 
         const logs = await publicClient.getLogs({
@@ -251,10 +273,30 @@ export default function ContentMarketplace() {
             }
           } catch (e) {}
         }
-        currentTo = scanFrom;
+        currentTo = chunkFrom;
       }
 
-      const allEvents = Array.from(uniqueEvents.values());
+      // ── Save updated cache to localStorage ───────────────────────────
+      try {
+        const eventsObj: Record<string, any> = {};
+        uniqueEvents.forEach((v, k) => {
+          eventsObj[k] = { ...v, id: v.id.toString(), price: v.price.toString() };
+        });
+        const refundsObj: Record<string, boolean> = {};
+        refundMap.forEach((v, k) => { refundsObj[k] = v; });
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          events: eventsObj,
+          refunds: refundsObj,
+          lastBlock: safeTip.toString(),
+        }));
+      } catch {}
+
+      const allEvents = Array.from(uniqueEvents.values()).map(e => ({
+        ...e,
+        id: typeof e.id === "string" ? BigInt(e.id) : e.id,
+        price: typeof e.price === "string" ? BigInt(e.price) : e.price,
+      }));
+
       addLog({ type: "info", message: `Scan Complete: Found ${allEvents.length} items. Loading metadata...` });
 
       // ── Phase 2: Fetch all item details in PARALLEL ──────────────────
