@@ -94,14 +94,14 @@ export default function Home() {
                 </span>
               </h2>
               <p className="mt-6 text-[var(--text-dim)] text-base sm:text-lg max-w-2xl mx-auto font-mono">
-                A brutalist payment hub on GenLayer. Stake tokens, purchase encrypted content, and resolve disputes using autonomous AI arbitration.
+                A programmable payment hub on Arc Testnet. Stake tokens, purchase encrypted content, and resolve disputes using autonomous AI arbitration.
               </p>
             </div>
 
             {/* Architecture Banner */}
             <div className="border-y-2 border-[var(--border-main)] bg-[var(--bg-card)] overflow-hidden py-4">
               <div className="animate-marquee flex items-center gap-8 text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-dim)]">
-                {Array(6).fill("GENLAYER STUDIONET // AI ARBITRATION // LIT PROTOCOL // PINATA IPFS // CIRCLE CCTP // ").map((text, i) => (
+                {Array(6).fill("ARC TESTNET // GENLAYER AI // LIT PROTOCOL // PINATA IPFS // CIRCLE CCTP // ").map((text, i) => (
                   <span key={i} className="shrink-0">{text}</span>
                 ))}
               </div>
