@@ -94,14 +94,14 @@ export default function Home() {
                 </span>
               </h2>
               <p className="mt-6 text-[var(--text-dim)] text-base sm:text-lg max-w-2xl mx-auto font-mono">
-                A brutalist payment hub on Arc Testnet. Stake tokens, purchase encrypted content, and resolve disputes using GenLayer AI arbitration.
+                A brutalist payment hub on GenLayer. Stake tokens, purchase encrypted content, and resolve disputes using autonomous AI arbitration.
               </p>
             </div>
 
             {/* Architecture Banner */}
             <div className="border-y-2 border-[var(--border-main)] bg-[var(--bg-card)] overflow-hidden py-4">
               <div className="animate-marquee flex items-center gap-8 text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-dim)]">
-                {Array(6).fill("ARC TESTNET // GENLAYER AI // LIT PROTOCOL // PINATA IPFS // CIRCLE CCTP // ").map((text, i) => (
+                {Array(6).fill("GENLAYER STUDIONET // AI ARBITRATION // LIT PROTOCOL // PINATA IPFS // CIRCLE CCTP // ").map((text, i) => (
                   <span key={i} className="shrink-0">{text}</span>
                 ))}
               </div>
@@ -116,12 +116,12 @@ export default function Home() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  { icon: Brain, label: "01", title: "GenLayer AI", desc: "Intelligent dispute resolution. If content quality is contested, the AI agent autonomously reviews the encrypted data and issues a verdict.", color: "#00FF87" },
+                  { icon: Brain, label: "01", title: "AI Arbitration", desc: "Intelligent dispute resolution. If content quality is contested, the GenLayer AI agent autonomously reviews the encrypted data and issues a verdict.", color: "#00FF87" },
                   { icon: Lock, label: "02", title: "Lit Protocol", desc: "Mathematically gated content decryption. Data is only decrypted when the smart contract verifies proof of payment.", color: "#00D9FF" },
-                  { icon: Zap, label: "03", title: "Arc Testnet", desc: "High-speed, low-cost programmable transactions ensuring smooth execution of payment streams and stakes.", color: "#FFE600" },
+                  { icon: Zap, label: "03", title: "GenLayer Studionet", desc: "High-speed, low-cost programmable transactions and AI execution ensuring smooth operation of payment streams and stakes.", color: "#FFE600" },
                   { icon: Shield, label: "04", title: "Trustless Escrow", desc: "Funds are locked in the smart contract until the transaction is finalized or disputed. No centralized intermediaries.", color: "#FF3366" },
                   { icon: Coins, label: "05", title: "Creator Staking", desc: "Creators stake tokens to list content. Quality is incentivized as bad actors lose their stake upon AI dispute resolution.", color: "#B300FF" },
-                  { icon: Network, label: "06", title: "CCTP Bridge", desc: "Seamless liquidity transfer from Sepolia to Arc using Circle's Cross-Chain Transfer Protocol integration.", color: "#4D7FFF" },
+                  { icon: Network, label: "06", title: "CCTP Bridge", desc: "Seamless liquidity transfer across networks using Circle's Cross-Chain Transfer Protocol integration.", color: "#4D7FFF" },
                 ].map((f, i) => (
                   <div key={i} className="group relative">
                     <div className="absolute inset-0 bg-transparent border-2 border-[var(--border-main)] translate-x-2 translate-y-2 transition-transform group-hover:translate-x-3 group-hover:translate-y-3" style={{borderColor: f.color, opacity: 0.3}}></div>
