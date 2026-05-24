@@ -748,7 +748,11 @@ export default function ContentMarketplace() {
                                   {item.payouts[0]?.isDisputed
                                     ? item.payouts[0]?.resolved 
                                         ? (item.payouts[0]?.refunded ? "[ VERDICT: BUYER REFUNDED (SCAM DETECTED) ]" : "[ VERDICT: DISPUTE DISMISSED (CONTENT VALID) ]")
-                                        : "[ DISPUTE OPEN — GENLAYER AI JURY DELIBERATING... ]"
+                                        : (
+                                            <span>
+                                              [ DISPUTE OPEN — <a href="https://studio.genlayer.com/contracts/0x06E4B36E19dB89A821d0F852868E868f992Dd0e4" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#00FF87] transition-colors">GENLAYER AI JURY DELIBERATING... ↗</a> ]
+                                            </span>
+                                          )
                                     : (revealedSecrets[item.id.toString()] || "SECRET CONTENT GATING (LIT PROTOCOL)")}
                                 </p>
                                 {!revealedSecrets[item.id.toString()] && !item.payouts[0]?.isDisputed && (
