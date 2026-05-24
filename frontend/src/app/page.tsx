@@ -116,9 +116,9 @@ export default function Home() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  { icon: Brain, label: "01", title: "AI Arbitration", desc: "Intelligent dispute resolution. If content quality is contested, the GenLayer AI agent autonomously reviews the encrypted data and issues a verdict.", color: "#00FF87" },
+                  { icon: Zap, label: "01", title: "Arc Testnet", desc: "High-speed, low-cost programmable transactions ensuring smooth execution of payment streams and stakes.", color: "#FFE600" },
                   { icon: Lock, label: "02", title: "Lit Protocol", desc: "Mathematically gated content decryption. Data is only decrypted when the smart contract verifies proof of payment.", color: "#00D9FF" },
-                  { icon: Zap, label: "03", title: "GenLayer Studionet", desc: "High-speed, low-cost programmable transactions and AI execution ensuring smooth operation of payment streams and stakes.", color: "#FFE600" },
+                  { icon: Brain, label: "03", title: "GenLayer AI", desc: "Intelligent dispute resolution. If content quality is contested, the GenLayer AI agent autonomously reviews the encrypted data and issues a verdict.", color: "#00FF87" },
                   { icon: Shield, label: "04", title: "Trustless Escrow", desc: "Funds are locked in the smart contract until the transaction is finalized or disputed. No centralized intermediaries.", color: "#FF3366" },
                   { icon: Coins, label: "05", title: "Creator Staking", desc: "Creators stake tokens to list content. Quality is incentivized as bad actors lose their stake upon AI dispute resolution.", color: "#B300FF" },
                   { icon: Network, label: "06", title: "CCTP Bridge", desc: "Seamless liquidity transfer across networks using Circle's Cross-Chain Transfer Protocol integration.", color: "#4D7FFF" },
