@@ -31,24 +31,24 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4 bg-[var(--bg-card)] p-2 sm:bg-transparent sm:p-0 border-2 border-[var(--border-main)] sm:border-0 grow sm:grow-0 justify-center">
             <InfoTooltip 
-              title="Road to Production"
+              title="System Architecture"
               content={(
                 <div className="space-y-4">
                   <div className="border-b border-[#FFE600]/20 pb-2 text-[10px]">
-                    <p className="text-[#FFE600] font-black tracking-widest mb-1">01. DATA RESILIENCE</p>
-                    <p>MIGRATE FROM LOCALSTORAGE TO IPFS + SUPABASE FOR CROSS-DEVICE METADATA PERSISTENCE.</p>
+                    <p className="text-[#FFE600] font-black tracking-widest mb-1">01. DATA STORAGE [ACTIVE]</p>
+                    <p>PINATA IPFS INTEGRATION COMBINED WITH INCREMENTAL LOCAL CACHING FOR HIGH PERFORMANCE.</p>
                   </div>
                   <div className="border-b border-[#FFE600]/20 pb-2 text-[10px]">
-                    <p className="text-[#FFE600] font-black tracking-widest mb-1">02. PRIVACY ENGINE</p>
-                    <p>IMPLEMENT ZK-PROOFS OR LIT PROTOCOL FOR MATHEMATICALLY GATED CONTENT DECRYPTION.</p>
+                    <p className="text-[#FFE600] font-black tracking-widest mb-1">02. PRIVACY ENGINE [ACTIVE]</p>
+                    <p>LIT PROTOCOL INTEGRATION ENSURING CONTENT IS MATHEMATICALLY GATED BY SMART CONTRACT CONDITIONS.</p>
                   </div>
                   <div className="border-b border-[#FFE600]/20 pb-2 text-[10px]">
-                    <p className="text-[#FFE600] font-black tracking-widest mb-1">03. PERFORMANCE</p>
-                    <p>LEVERAGE SUBGRAPHS (THE GRAPH) FOR INDEXED, HIGH-SPEED EVENT TRACKING ON ARC NETWORK.</p>
+                    <p className="text-[#FFE600] font-black tracking-widest mb-1">03. ARBITRATION [ACTIVE]</p>
+                    <p>GENLAYER AI AUTONOMOUSLY EVALUATES CONTESTED DATA AND EXECUTES TRUSTLESS DISPUTE RESOLUTION.</p>
                   </div>
                   <div className="text-[10px]">
-                    <p className="text-[#FFE600] font-black tracking-widest mb-1">04. MAINNET READY</p>
-                    <p>FORMAL SMART CONTRACT AUDITS AND MULTI-SIGNATURE TREASURY CONTROLS FOR INSTITUTIONAL USE.</p>
+                    <p className="text-[#FFE600] font-black tracking-widest mb-1">04. MAINNET ROADMAP</p>
+                    <p>IMPLEMENT THE GRAPH FOR DECENTRALIZED EVENT INDEXING AND COMPLETE FORMAL SMART CONTRACT AUDITS.</p>
                   </div>
                 </div>
               )}
