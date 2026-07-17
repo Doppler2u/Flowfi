@@ -72,7 +72,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     // Explicitly binding to the RPC URL to ensure production reliability (fixes Vercel-specific connection drops)
     const pub = createPublicClient({ 
       chain: ARC_TESTNET as any, 
-      transport: http("https://rpc.testnet.arc.network") 
+      transport: http("https://rpc.testnet.arc.network", { fetchOptions: { cache: "no-store" } }) 
     });
     const wallet = createWalletClient({ 
       account: addr, 
