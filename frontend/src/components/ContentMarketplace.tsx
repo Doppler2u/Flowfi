@@ -206,6 +206,8 @@ export default function ContentMarketplace() {
   const fetchGallery = useCallback(async () => {
     if (!publicClient) return;
     setLoadingGallery(true);
+    // Delay scanner startup so smaller requests (balances) can finish first without being rate limited
+    await new Promise(r => setTimeout(r, 1000));
     try {
       const currentBlock = await publicClient.getBlockNumber();
       const safeTip = currentBlock > 10n ? currentBlock - 10n : currentBlock;
@@ -254,8 +256,8 @@ export default function ContentMarketplace() {
           toBlock: toHex as any,
         });
         
-        // Add a tiny delay to respect public RPC rate limits (HTTP 429)
-        await new Promise(r => setTimeout(r, 100));
+        // Sleep for 500ms between chunks to strictly respect Arc Testnet rate limits (approx 5 req/sec)
+        await new Promise(r => setTimeout(r, 500));
 
         for (const log of logs) {
           try {
