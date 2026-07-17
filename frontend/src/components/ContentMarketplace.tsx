@@ -28,8 +28,8 @@ import InfoTooltip from "./InfoTooltip";
 
 type ContentType = "Article" | "Video" | "Image" | "Code" | "Audio";
 
-const DEPLOYMENT_BLOCK = 43300000n; // Block when new FlowFi contract was deployed
-const CHUNK_SIZE = 5000n;
+const DEPLOYMENT_BLOCK = 52000000n; // Updated to recent block to avoid scanning 9M blocks and hitting RPC rate limit
+const CHUNK_SIZE = 10000n;
 const CACHE_KEY = "flowfi_gallery_cache_v1";
 
 interface GalleryItem {
@@ -238,7 +238,7 @@ export default function ContentMarketplace() {
       // ── Phase 1: Only scan NEW blocks since last cached block ─────────
       const scanFrom = lastScannedBlock < safeTip ? lastScannedBlock : safeTip;
       let currentTo = safeTip;
-      const SAFE_CHUNK = 5000n; // 5x larger chunks = 5x fewer RPC calls
+      const SAFE_CHUNK = 9900n; // Close to 10k Arc RPC limit
 
       while (currentTo > scanFrom) {
         const from = currentTo > SAFE_CHUNK ? currentTo - SAFE_CHUNK : scanFrom;
@@ -253,6 +253,9 @@ export default function ContentMarketplace() {
           fromBlock: fromHex as any,
           toBlock: toHex as any,
         });
+        
+        // Add a tiny delay to respect public RPC rate limits (HTTP 429)
+        await new Promise(r => setTimeout(r, 100));
 
         for (const log of logs) {
           try {
