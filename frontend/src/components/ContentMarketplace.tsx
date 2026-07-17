@@ -94,8 +94,6 @@ export default function ContentMarketplace() {
   const [isStaked, setIsStaked] = useState(false);
   const [loadingStake, setLoadingStake] = useState(false);
   const [loadingUnstake, setLoadingUnstake] = useState(false);
-  const [stakingHistory, setStakingHistory] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Gallery State
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
@@ -141,8 +139,9 @@ export default function ContentMarketplace() {
         const val = res as bigint;
         setStakedBalance(formatUnits(val, 18));
         setIsStaked(val >= parseUnits("5", 18));
+      }).catch((e) => {
+        console.error("Failed to load staked balance", e);
       });
-      fetchStakingHistory();
     }
   }, [address, publicClient, activeTab]);
 
@@ -160,40 +159,6 @@ export default function ContentMarketplace() {
     initLit();
   }, []);
 
-  const fetchStakingHistory = async () => {
-    if (!address || !publicClient) return;
-    setLoadingHistory(true);
-    try {
-      const currentBlock = await publicClient.getBlockNumber();
-      // Stay safely within the 10,000 limit of the Arc RPC
-      const safeFrom = currentBlock > 9500n ? currentBlock - 9500n : 0n;
-      
-      const logs = await publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: FlowFiABI.find(x => x.name === "Staked"), 
-        args: { user: address },
-        fromBlock: safeFrom,
-      });
-
-      const unstakeLogs = await publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: FlowFiABI.find(x => x.name === "Unstaked"),
-        args: { user: address },
-        fromBlock: safeFrom,
-      });
-
-      const history = [
-        ...logs.map(l => ({ type: "STAKE", amount: (l as any).args.amount, hash: l.transactionHash, block: l.blockNumber || 0n })),
-        ...unstakeLogs.map(l => ({ type: "UNSTAKE", amount: (l as any).args.amount, hash: l.transactionHash, block: l.blockNumber || 0n }))
-      ].sort((a, b) => Number(b.block - a.block));
-      
-      setStakingHistory(history);
-    } catch (e) {
-      console.error("History fetch error", e);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
 
   // Load Gallery
   useEffect(() => {
@@ -424,7 +389,6 @@ export default function ContentMarketplace() {
       await publicClient.waitForTransactionReceipt({ hash });
       addLog({ type: "info", message: "Stake successful! You are now a verified Creator.", txHash: hash });
       refreshBalance();
-      fetchStakingHistory();
     } catch (e: any) {
       addLog({ type: "error", message: "Staking failed. Check balance." });
     } finally {
@@ -450,7 +414,6 @@ export default function ContentMarketplace() {
       await publicClient.waitForTransactionReceipt({ hash });
       addLog({ type: "info", message: "Successfully unstaked 5 USDC.", txHash: hash });
       refreshBalance();
-      fetchStakingHistory();
     } catch (e: any) {
       addLog({ type: "error", message: "Unstaking failed. Active assets or disputes may prevent withdrawal." });
     } finally {
