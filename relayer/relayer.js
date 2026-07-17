@@ -21,7 +21,7 @@ const MAX_WAIT_MS           = 900000;
 
 // Indexer Config
 const DEPLOYMENT_BLOCK      = 52000000n;
-const CHUNK_SIZE            = 9900n;
+const CHUNK_SIZE            = 2000n;
 
 if (!PRIVATE_KEY || !FLOWFI_ARC_ADDRESS || !ARBITER_GL_ADDRESS) {
   console.error("❌ Missing required environment variables. Set PRIVATE_KEY, FLOWFI_CONTRACT_ARC, ARBITER_CONTRACT_GENLAYER.");
@@ -139,16 +139,33 @@ async function buildIndex() {
     const fromHex = `0x${chunkFrom.toString(16)}`;
     const toHex = `0x${currentTo.toString(16)}`;
 
-    const logs = await arcPublic.getLogs({
-      address: FLOWFI_ARC_ADDRESS,
-      fromBlock: fromHex,
-      toBlock: toHex,
-    });
-
-    for (const log of logs) processLog(log);
+    let success = false;
+    let retries = 3;
     
+    while (!success && retries > 0) {
+      try {
+        const logs = await arcPublic.getLogs({
+          address: FLOWFI_ARC_ADDRESS,
+          fromBlock: fromHex,
+          toBlock: toHex,
+        });
+
+        for (const log of logs) processLog(log);
+        success = true;
+      } catch (err) {
+        console.warn(`[Indexer] RPC rate limit hit on chunk ${fromHex}-${toHex}. Retrying... (${retries} left)`);
+        retries--;
+        await new Promise(r => setTimeout(r, 2000)); // wait 2 seconds before retry
+      }
+    }
+    
+    if (!success) {
+      console.error(`[Indexer] Failed to fetch chunk after retries. Aborting historical scan to prevent crash.`);
+      break;
+    }
+
     // Polite delay for public RPC
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 500));
     currentTo = chunkFrom;
   }
   
