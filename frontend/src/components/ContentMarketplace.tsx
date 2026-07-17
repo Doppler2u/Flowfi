@@ -206,103 +206,27 @@ export default function ContentMarketplace() {
   const fetchGallery = useCallback(async () => {
     if (!publicClient) return;
     setLoadingGallery(true);
-    // Delay scanner startup so smaller requests (balances) can finish first without being rate limited
-    await new Promise(r => setTimeout(r, 1000));
     try {
-      const currentBlock = await publicClient.getBlockNumber();
-      const safeTip = currentBlock > 10n ? currentBlock - 10n : currentBlock;
-
-      // ── Load cache from localStorage ─────────────────────────────────
-      let cachedEvents: Record<string, any> = {};
-      let cachedRefunds: Record<string, boolean> = {};
-      let lastScannedBlock = DEPLOYMENT_BLOCK;
-
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          cachedEvents = parsed.events || {};
-          cachedRefunds = parsed.refunds || {};
-          lastScannedBlock = BigInt(parsed.lastBlock || DEPLOYMENT_BLOCK.toString());
-        }
-      } catch {}
-
-      // If we have cached data, show it instantly while we scan new blocks
-      const uniqueEvents = new Map<string, any>(Object.entries(cachedEvents));
-      const refundMap = new Map<string, boolean>(Object.entries(cachedRefunds));
-
-      if (uniqueEvents.size > 0) {
-        addLog({ type: "info", message: `Loaded ${uniqueEvents.size} cached items. Checking for new content...` });
-      } else {
-        addLog({ type: "info", message: "First load: scanning full history..." });
-      }
-
-      // ── Phase 1: Only scan NEW blocks since last cached block ─────────
-      const scanFrom = lastScannedBlock < safeTip ? lastScannedBlock : safeTip;
-      let currentTo = safeTip;
-      const SAFE_CHUNK = 9900n; // Close to 10k Arc RPC limit
-
-      while (currentTo > scanFrom) {
-        const from = currentTo > SAFE_CHUNK ? currentTo - SAFE_CHUNK : scanFrom;
-        const chunkFrom = from < scanFrom ? scanFrom : from;
-        if (chunkFrom >= currentTo) break;
-
-        const fromHex = `0x${chunkFrom.toString(16)}`;
-        const toHex = `0x${currentTo.toString(16)}`;
-
-        const logs = await publicClient.getLogs({
-          address: CONTRACT_ADDRESS,
-          fromBlock: fromHex as any,
-          toBlock: toHex as any,
-        });
-        
-        // Sleep for 500ms between chunks to strictly respect Arc Testnet rate limits (approx 5 req/sec)
-        await new Promise(r => setTimeout(r, 500));
-
-        for (const log of logs) {
-          try {
-            const decoded = decodeEventLog({ abi: FlowFiABI, data: log.data, topics: log.topics });
-            if (decoded.eventName === "ContentCreated") {
-              const args = decoded.args as any;
-              const id = args.contentId;
-              if (id !== undefined) {
-                uniqueEvents.set(id.toString(), {
-                  id, creator: args.creator, price: args.price, metadataURI: args.metadataURI
-                });
-              }
-            } else if (decoded.eventName === "DisputeResolved") {
-              const args = decoded.args as any;
-              if (args.contentId !== undefined) {
-                refundMap.set(`${args.contentId.toString()}_${args.payoutIndex.toString()}`, args.refunded);
-              }
-            }
-          } catch (e) {}
-        }
-        currentTo = chunkFrom;
-      }
-
-      // ── Save updated cache to localStorage ───────────────────────────
-      try {
-        const eventsObj: Record<string, any> = {};
-        uniqueEvents.forEach((v, k) => {
-          eventsObj[k] = { ...v, id: v.id.toString(), price: v.price.toString() };
-        });
-        const refundsObj: Record<string, boolean> = {};
-        refundMap.forEach((v, k) => { refundsObj[k] = v; });
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          events: eventsObj,
-          refunds: refundsObj,
-          lastBlock: safeTip.toString(),
-        }));
-      } catch {}
-
-      const allEvents = Array.from(uniqueEvents.values()).map(e => ({
-        ...e,
-        id: typeof e.id === "string" ? BigInt(e.id) : e.id,
-        price: typeof e.price === "string" ? BigInt(e.price) : e.price,
+      addLog({ type: "info", message: "Fetching Gallery from Indexer..." });
+      
+      const INDEXER_URL = process.env.NEXT_PUBLIC_INDEXER_URL || "http://localhost:10000";
+      const response = await fetch(`${INDEXER_URL}/api/gallery`, { cache: "no-store" });
+      
+      if (!response.ok) throw new Error("Indexer unreachable");
+      
+      const data = await response.json();
+      
+      // Convert to Map so the existing refundMap.get() logic below still works
+      const refundMap = new Map<string, boolean>(Object.entries(data.refunds || {}));
+      
+      const allEvents = Object.values(data.events || {}).map((e: any) => ({
+        id: BigInt(e.id),
+        creator: e.creator,
+        price: BigInt(e.price),
+        metadataURI: e.metadataURI,
       }));
 
-      addLog({ type: "info", message: `Scan Complete: Found ${allEvents.length} items. Loading metadata...` });
+      addLog({ type: "info", message: `Indexer returned ${allEvents.length} items instantly. Loading metadata...` });
 
       // ── Phase 2: Fetch all item details in PARALLEL ──────────────────
       const results = await Promise.allSettled(

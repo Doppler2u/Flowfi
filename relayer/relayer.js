@@ -1,24 +1,27 @@
 // relayer.js
-// FlowFi ↔ GenLayer Oracle Relayer
+// FlowFi ↔ GenLayer Oracle Relayer & Indexer
 // Listens for DisputeRaised on Arc Testnet → triggers GenLayer → posts verdict back to Arc
+// Also indexes ContentCreated and DisputeResolved events to serve the Gallery API
 //
 // Usage: node relayer.js
 // Requires .env with: PRIVATE_KEY, FLOWFI_CONTRACT_ARC, ARBITER_CONTRACT_GENLAYER
 
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createPublicClient, createWalletClient, http, decodeEventLog } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { createClient, createAccount } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import { readFileSync } from "fs";
-import path from "path";
 import { createServer } from "http";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const PRIVATE_KEY           = process.env.PRIVATE_KEY;
-const FLOWFI_ARC_ADDRESS    = process.env.FLOWFI_CONTRACT_ARC;
+const FLOWFI_ARC_ADDRESS    = process.env.FLOWFI_CONTRACT_ARC || "0x348cedA90058232b63ccFE1514B2cfbdcecb6e56";
 const ARBITER_GL_ADDRESS    = process.env.ARBITER_CONTRACT_GENLAYER;
 const POLL_INTERVAL_MS      = 5000;
-const MAX_WAIT_MS           = 900000; // 15 minutes — GenLayer consensus can take 5-10 min
+const MAX_WAIT_MS           = 900000; 
+
+// Indexer Config
+const DEPLOYMENT_BLOCK      = 52000000n;
+const CHUNK_SIZE            = 9900n;
 
 if (!PRIVATE_KEY || !FLOWFI_ARC_ADDRESS || !ARBITER_GL_ADDRESS) {
   console.error("❌ Missing required environment variables. Set PRIVATE_KEY, FLOWFI_CONTRACT_ARC, ARBITER_CONTRACT_GENLAYER.");
@@ -27,14 +30,13 @@ if (!PRIVATE_KEY || !FLOWFI_ARC_ADDRESS || !ARBITER_GL_ADDRESS) {
 
 // ── Arc Testnet chain definition ──────────────────────────────────────────────
 const arcTestnet = {
-  id: 5042002, // Arc Testnet
+  id: 5042002, 
   name: "Arc Testnet",
   nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
 };
 
 // ── ABIs ─────────────────────────────────────────────────────────────────────
-// Full ABI definition is more reliable than parseAbiItem for watchContractEvent decoding
 const DISPUTE_RAISED_EVENT = {
   anonymous: false,
   name: "DisputeRaised",
@@ -45,6 +47,31 @@ const DISPUTE_RAISED_EVENT = {
     { indexed: true,  internalType: "address", name: "reporter",    type: "address" },
   ],
 };
+
+const CONTENT_CREATED_EVENT = {
+  anonymous: false,
+  name: "ContentCreated",
+  type: "event",
+  inputs: [
+    { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+    { indexed: true, internalType: "address", name: "creator", type: "address" },
+    { indexed: false, internalType: "uint256", name: "price", type: "uint256" },
+    { indexed: false, internalType: "string", name: "metadataURI", type: "string" },
+  ],
+};
+
+const DISPUTE_RESOLVED_EVENT = {
+  anonymous: false,
+  name: "DisputeResolved",
+  type: "event",
+  inputs: [
+    { indexed: true, internalType: "uint256", name: "contentId", type: "uint256" },
+    { indexed: false, internalType: "uint256", name: "payoutIndex", type: "uint256" },
+    { indexed: false, internalType: "bool", name: "refunded", type: "bool" },
+  ],
+};
+
+const FLOWFI_EVENTS_ABI = [DISPUTE_RAISED_EVENT, CONTENT_CREATED_EVENT, DISPUTE_RESOLVED_EVENT];
 
 const RESOLVE_DISPUTE_ABI = [{
   name: "resolveDispute",
@@ -57,25 +84,79 @@ const RESOLVE_DISPUTE_ABI = [{
   outputs: [],
 }];
 
-const SET_RELAYER_ABI = [{
-  name: "setRelayer",
-  type: "function",
-  inputs: [{ name: "_relayer", type: "address" }],
-  outputs: [],
-}];
+// ── State ─────────────────────────────────────────────────────────────────────
+// Cache for the gallery indexer
+const galleryCache = {
+  events: {},   // { "contentId": { id, creator, price, metadataURI } }
+  refunds: {},  // { "contentId_payoutIndex": boolean }
+  lastBlock: DEPLOYMENT_BLOCK.toString()
+};
+
+function toJson(data) {
+  return JSON.stringify(data, (_, v) => typeof v === 'bigint' ? v.toString() : v);
+}
 
 // ── Clients ───────────────────────────────────────────────────────────────────
 const account = privateKeyToAccount(PRIVATE_KEY);
-
-// Arc clients (viem)
 const arcPublic = createPublicClient({ chain: arcTestnet, transport: http() });
 const arcWallet = createWalletClient({ account, chain: arcTestnet, transport: http() });
-
-// GenLayer client (genlayer-js)
 const glAccount = createAccount(PRIVATE_KEY);
 const glClient  = createClient({ chain: studionet, account: glAccount });
 
-// ── Core Functions ────────────────────────────────────────────────────────────
+// ── Indexer Functions ─────────────────────────────────────────────────────────
+
+function processLog(log) {
+  try {
+    const decoded = decodeEventLog({ abi: FLOWFI_EVENTS_ABI, data: log.data, topics: log.topics });
+    if (decoded.eventName === "ContentCreated") {
+      const args = decoded.args;
+      galleryCache.events[args.contentId.toString()] = {
+        id: args.contentId.toString(),
+        creator: args.creator,
+        price: args.price.toString(),
+        metadataURI: args.metadataURI
+      };
+    } else if (decoded.eventName === "DisputeResolved") {
+      const args = decoded.args;
+      galleryCache.refunds[`${args.contentId.toString()}_${args.payoutIndex.toString()}`] = args.refunded;
+    }
+  } catch (e) {
+    // Ignore unrelated events or parsing errors
+  }
+}
+
+async function buildIndex() {
+  console.log(`\n📚 [Indexer] Starting historical scan from block ${DEPLOYMENT_BLOCK}...`);
+  const safeTip = await arcPublic.getBlockNumber();
+  let currentTo = safeTip;
+  const scanFrom = DEPLOYMENT_BLOCK;
+
+  while (currentTo > scanFrom) {
+    const from = currentTo > CHUNK_SIZE ? currentTo - CHUNK_SIZE : scanFrom;
+    const chunkFrom = from < scanFrom ? scanFrom : from;
+    if (chunkFrom >= currentTo) break;
+
+    const fromHex = `0x${chunkFrom.toString(16)}`;
+    const toHex = `0x${currentTo.toString(16)}`;
+
+    const logs = await arcPublic.getLogs({
+      address: FLOWFI_ARC_ADDRESS,
+      fromBlock: fromHex,
+      toBlock: toHex,
+    });
+
+    for (const log of logs) processLog(log);
+    
+    // Polite delay for public RPC
+    await new Promise(r => setTimeout(r, 200));
+    currentTo = chunkFrom;
+  }
+  
+  galleryCache.lastBlock = safeTip.toString();
+  console.log(`✅ [Indexer] Scan complete. Found ${Object.keys(galleryCache.events).length} assets.`);
+}
+
+// ── Core Functions (GenLayer Arbitration) ─────────────────────────────────────
 
 async function triggerArbitration(disputeId, cid, contentUrl, taskDescription) {
   console.log(`[GenLayer] Triggering arbitration for dispute ${disputeId}...`);
@@ -96,7 +177,6 @@ async function getVerdictFromGenLayer(disputeId) {
     args: [disputeId],
     jsonSafeReturn: true,
   });
-  // get_verdict returns a JSON string — parse it
   if (!raw || raw === "") return null;
   try {
     return typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -111,17 +191,14 @@ async function pollForVerdict(disputeId) {
 
   while (Date.now() - start < MAX_WAIT_MS) {
     const verdict = await getVerdictFromGenLayer(disputeId);
-
     if (verdict && verdict.status === "RESOLVED") {
       console.log(`[GenLayer] Verdict received:`, verdict);
       return verdict;
     }
-
     console.log(`[GenLayer] Still deliberating... retrying in ${POLL_INTERVAL_MS / 1000}s`);
     await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
   }
 
-  // Before throwing, do one last check — GenLayer may have finalized during the timeout
   const finalCheck = await getVerdictFromGenLayer(disputeId);
   if (finalCheck && finalCheck.status === "RESOLVED") {
     console.log(`[GenLayer] Verdict found on final check:`, finalCheck);
@@ -132,7 +209,7 @@ async function pollForVerdict(disputeId) {
 }
 
 async function postVerdictToArc(contentId, payoutIndex, isScam) {
-  console.log(`[Arc] Posting verdict — contentId: ${contentId}, payoutIndex: ${payoutIndex}, refundBuyer (isScam): ${isScam}`);
+  console.log(`[Arc] Posting verdict — contentId: ${contentId}, payoutIndex: ${payoutIndex}, refundBuyer: ${isScam}`);
   const hash = await arcWallet.writeContract({
     address: FLOWFI_ARC_ADDRESS,
     abi: RESOLVE_DISPUTE_ABI,
@@ -150,7 +227,6 @@ async function handleDisputeRaised(log) {
   const { contentId, payoutIndex, reporter } = log.args;
   const disputeId = contentId.toString() + "_" + payoutIndex.toString();
 
-  // Fetch the CID directly from the contract since it's not in the event
   let cid = "unknown";
   try {
     const content = await arcPublic.readContract({
@@ -176,13 +252,8 @@ async function handleDisputeRaised(log) {
   console.log(`========================================\n`);
 
   try {
-    // 1. Trigger GenLayer AI arbitration
     await triggerArbitration(disputeId, cid, contentUrl, taskDescription);
-
-    // 2. Wait for consensus verdict
     const verdict = await pollForVerdict(disputeId);
-
-    // 3. Post verdict back to Arc (is_scam = refundBuyer)
     await postVerdictToArc(contentId, payoutIndex, verdict.is_scam);
 
     console.log(`✅ Dispute ${disputeId} fully resolved.`);
@@ -192,7 +263,6 @@ async function handleDisputeRaised(log) {
 
   } catch (err) {
     console.error(`❌ Dispute ${disputeId} failed:`, err.message);
-    // TODO: alert admin for manual fallback
   }
 }
 
@@ -204,26 +274,62 @@ async function startRelayer() {
   console.log(`   GenLayer Arbiter: ${ARBITER_GL_ADDRESS}`);
   console.log(`   Relayer wallet: ${account.address}\n`);
 
+  // Build the gallery index first
+  await buildIndex();
+
+  // Then start watching for ALL events
   arcPublic.watchContractEvent({
     address: FLOWFI_ARC_ADDRESS,
-    abi: [DISPUTE_RAISED_EVENT],
-    eventName: "DisputeRaised",
+    abi: FLOWFI_EVENTS_ABI,
     onLogs: (logs) => {
       for (const log of logs) {
-        if (!log.args) {
-          console.error("[Arc] Received log with no args, skipping.", log);
-          continue;
+        if (!log.args) continue;
+        
+        // Update index cache in real-time
+        processLog(log);
+
+        // If it's a dispute, trigger the AI arbitration pipeline
+        if (log.topics[0] === '0x3213a7c6696b991ad34b07c80521ca49fbecc93961ef0aefedffb8b6a3ef83b5') {
+          // This is the keccak256 hash for DisputeRaised, but viem parses args for us via decodeEventLog safely inside handleDisputeRaised if we manually decode.
+          // Since viem 2.x, watchContractEvent with multiple ABIs returns the eventName
+          // Let's decode it safely:
+          try {
+            const decoded = decodeEventLog({ abi: FLOWFI_EVENTS_ABI, data: log.data, topics: log.topics });
+            if (decoded.eventName === "DisputeRaised") {
+              handleDisputeRaised(decoded);
+            }
+          } catch(e) {}
         }
-        handleDisputeRaised(log);
       }
     },
     onError: (err) => console.error("[Arc] Event watch error:", err),
   });
 }
 
-// ── Start Keep-Alive Server ───────────────────────────────────────────────────
-createServer((req, res) => res.end("FlowFi Relayer is awake!")).listen(process.env.PORT || 10000, () => {
-  console.log(`🌐 Keep-alive HTTP server listening on port ${process.env.PORT || 10000}`);
+// ── API Server ───────────────────────────────────────────────────────────
+createServer((req, res) => {
+  // CORS setup
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  
+  if (req.method === "OPTIONS") {
+    res.writeHead(200);
+    return res.end();
+  }
+
+  // Gallery Endpoint
+  if (req.url === "/api/gallery" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(toJson(galleryCache));
+    return;
+  }
+
+  // Default Keep-Alive
+  res.writeHead(200);
+  res.end("FlowFi Relayer & Indexer is awake!");
+}).listen(process.env.PORT || 10000, () => {
+  console.log(`🌐 Indexer API server listening on port ${process.env.PORT || 10000}`);
 });
 
 startRelayer();
