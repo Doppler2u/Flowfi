@@ -11,6 +11,7 @@ import { createClient, createAccount } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { readFileSync } from "fs";
 import path from "path";
+import { createServer } from "http";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const PRIVATE_KEY           = process.env.PRIVATE_KEY;
@@ -219,5 +220,10 @@ async function startRelayer() {
     onError: (err) => console.error("[Arc] Event watch error:", err),
   });
 }
+
+// ── Start Keep-Alive Server ───────────────────────────────────────────────────
+createServer((req, res) => res.end("FlowFi Relayer is awake!")).listen(process.env.PORT || 10000, () => {
+  console.log(`🌐 Keep-alive HTTP server listening on port ${process.env.PORT || 10000}`);
+});
 
 startRelayer();
