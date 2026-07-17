@@ -58,8 +58,10 @@ export default function CreatorPanel() {
       ]);
       setStakedBalance(formatUnits(staked, 18));
       setEarnings(formatUnits(bal, 18));
-    } catch {}
-  }, [publicClient, address]);
+    } catch (e: any) {
+      addLog({ type: "error", message: `Fetch Error: ${e.message || String(e)}` });
+    }
+  }, [publicClient, address, addLog]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
