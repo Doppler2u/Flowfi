@@ -4,13 +4,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { createPublicClient, createWalletClient, custom, http, formatUnits, parseUnits, PublicClient, WalletClient } from "viem";
 import { FlowFiABI, CONTRACT_ADDRESS } from "@/lib/abi";
 
+// Use env-overridable RPC URL to bypass DNS issues on certain networks/machines
+const ARC_RPC_URL = process.env.NEXT_PUBLIC_ARC_RPC_URL || "https://rpc.testnet.arc.network";
+
 export const ARC_TESTNET = {
   id: 5042002,
   name: "Arc Testnet",
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
   rpcUrls: {
-    default: { http: ["https://rpc.testnet.arc.network"] },
-    public: { http: ["https://rpc.testnet.arc.network"] },
+    default: { http: [ARC_RPC_URL] },
+    public: { http: [ARC_RPC_URL] },
   },
   blockExplorers: {
     default: { name: "ArcScan", url: "https://testnet.arcscan.app" },
@@ -69,10 +72,14 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setupClients = useCallback(async (addr: `0x${string}`) => {
-    // Explicitly binding to the RPC URL to ensure production reliability (fixes Vercel-specific connection drops)
+    // Configure transport with retry logic to handle Arc Testnet rate limits gracefully
     const pub = createPublicClient({ 
       chain: ARC_TESTNET as any, 
-      transport: http("https://rpc.testnet.arc.network", { fetchOptions: { cache: "no-store" } }) 
+      transport: http(ARC_RPC_URL, { 
+        fetchOptions: { cache: "no-store" },
+        retryCount: 5,
+        retryDelay: 1500,
+      }) 
     });
     const wallet = createWalletClient({ 
       account: addr, 
@@ -123,7 +130,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     chainId: "0x4CEF52",
     chainName: "Arc Testnet",
     nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-    rpcUrls: ["https://rpc.testnet.arc.network"],
+    rpcUrls: [ARC_RPC_URL],
     blockExplorerUrls: ["https://testnet.arcscan.app"],
   };
 

@@ -33,8 +33,12 @@ const arcTestnet = {
   id: 5042002, 
   name: "Arc Testnet",
   nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+  // Using direct IP (208.115.227.31) as fallback to bypass Windows DNS lookup failures
   rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
 };
+
+// Resolve hostname manually to avoid Node.js DNS issues on Windows
+const RPC_URL = process.env.ARC_RPC_URL || "https://rpc.testnet.arc.network";
 
 // ── ABIs ─────────────────────────────────────────────────────────────────────
 const DISPUTE_RAISED_EVENT = {
@@ -98,8 +102,8 @@ function toJson(data) {
 
 // ── Clients ───────────────────────────────────────────────────────────────────
 const account = privateKeyToAccount(PRIVATE_KEY);
-const arcPublic = createPublicClient({ chain: arcTestnet, transport: http() });
-const arcWallet = createWalletClient({ account, chain: arcTestnet, transport: http() });
+const arcPublic = createPublicClient({ chain: arcTestnet, transport: http(RPC_URL) });
+const arcWallet = createWalletClient({ account, chain: arcTestnet, transport: http(RPC_URL) });
 const glAccount = createAccount(PRIVATE_KEY);
 const glClient  = createClient({ chain: studionet, account: glAccount });
 

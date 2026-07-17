@@ -127,21 +127,24 @@ export default function ContentMarketplace() {
     return () => clearTimeout(timeout);
   }, [createId, publicClient]);
 
-  // Load Staking Info
+  // Load Staking Info (staggered to avoid rate limits with other components)
   useEffect(() => {
     if (address && publicClient) {
-      publicClient.readContract({
-        address: CONTRACT_ADDRESS,
-        abi: FlowFiABI,
-        functionName: "stakedBalances",
-        args: [address],
-      }).then((res) => {
-        const val = res as bigint;
-        setStakedBalance(formatUnits(val, 18));
-        setIsStaked(val >= parseUnits("5", 18));
-      }).catch((e) => {
-        console.error("Failed to load staked balance", e);
-      });
+      const t = setTimeout(() => {
+        publicClient.readContract({
+          address: CONTRACT_ADDRESS,
+          abi: FlowFiABI,
+          functionName: "stakedBalances",
+          args: [address],
+        }).then((res) => {
+          const val = res as bigint;
+          setStakedBalance(formatUnits(val, 18));
+          setIsStaked(val >= parseUnits("5", 18));
+        }).catch((e) => {
+          console.error("Failed to load staked balance", e);
+        });
+      }, 3000);
+      return () => clearTimeout(t);
     }
   }, [address, publicClient, activeTab]);
 

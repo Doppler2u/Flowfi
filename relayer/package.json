@@ -2,6 +2,7 @@
   "name": "flowfi-arbiter",
   "type": "module",
   "scripts": {
+    "start": "node --env-file=.env relayer.js",
     "deploy": "node deploy.js"
   },
   "dependencies": {

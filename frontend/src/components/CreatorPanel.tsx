@@ -52,18 +52,19 @@ export default function CreatorPanel() {
   const refresh = useCallback(async () => {
     if (!publicClient || !address) return;
     try {
-      const [staked, bal] = await Promise.all([
-        publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "stakedBalances", args: [address] }) as Promise<bigint>,
-        publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "balances", args: [address] }) as Promise<bigint>,
-      ]);
+      // Sequential calls to avoid hitting Arc Testnet rate limits
+      const staked = await publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "stakedBalances", args: [address] }) as bigint;
       setStakedBalance(formatUnits(staked, 18));
+      
+      const bal = await publicClient.readContract({ address: CONTRACT_ADDRESS, abi: FlowFiABI, functionName: "balances", args: [address] }) as bigint;
       setEarnings(formatUnits(bal, 18));
     } catch (e: any) {
-      addLog({ type: "error", message: `Fetch Error: ${e.message || String(e)}` });
+      console.error("CreatorPanel fetch error:", e.message);
     }
-  }, [publicClient, address, addLog]);
+  }, [publicClient, address]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  // Stagger load so we don't compete with Web3Provider's initial balance fetch
+  useEffect(() => { const t = setTimeout(refresh, 1500); return () => clearTimeout(t); }, [refresh]);
 
   // ── Debounced ID check ────────────────────────────────────────────────────
   useEffect(() => {
