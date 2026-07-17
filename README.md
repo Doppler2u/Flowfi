@@ -38,7 +38,7 @@ A visual identity that matches the precision of the code:
 - **L1 Blockchain**: Arc Testnet (RPC: `rpc.testnet.arc.network`)
 - **Privacy Engine**: Lit Protocol (`datil` network)
 - **AI Arbitration**: GenLayer Studionet (GenVM Intelligent Contracts)
-- **Oracle Bridge**: Node.js Relayer (deployed on Railway)
+- **Oracle Bridge**: Node.js Relayer (deployed on Render)
 - **Frontend**: Next.js 15 (App Router), Tailwind CSS v4, Viem v2
 - **Data Layer**: IPFS (via Pinata) for permissionless metadata storage
 - **Design**: Refined Brutalism (Space Grotesk & Space Mono)
@@ -48,7 +48,7 @@ A visual identity that matches the precision of the code:
 ## 🤖 Phase 3: Autonomous AI Arbitration (Live)
 FlowFi has successfully integrated the **GenLayer Network** to completely decentralize the dispute resolution process, eliminating the need for a central administrator.
 - **GenVM Intelligent Contracts**: When a dispute is raised, a Python contract (`FlowFiArbiter.py`) executing on GenLayer's Studionet automatically evaluates the disputed content metadata using multiple LLM validators.
-- **Oracle Bridge**: A Node.js Relayer deployed on Railway automatically pipes `DisputeRaised` events from the Arc Testnet to GenLayer, and routes verdicts back to settle funds.
+- **Oracle Bridge**: A Node.js Relayer deployed on Render automatically pipes `DisputeRaised` events from the Arc Testnet to GenLayer, and routes verdicts back to settle funds.
 - **Optimistic AI Consensus**: Multiple LLMs act as independent jurors on GenLayer. They analyze the IPFS metadata and delivery URL, reach consensus on whether the transaction was a "Creator Scam" or "Buyer Fraud", and automatically execute the refund via the Oracle Bridge back on the Arc Testnet.
 
 ---
@@ -107,7 +107,7 @@ node relayer.js
 |-----------|---------|---------|
 | **FlowFi Contract** | Arc Testnet (Chain ID: `5042002`) | `0x348cedA90058232b63ccFE1514B2cfbdcecb6e56` |
 | **FlowFiArbiter** | GenLayer Studionet | `0x06E4B36E19dB89A821d0F852868E868f992Dd0e4` |
-| **Relayer** | Railway (Cloud) | Auto-deployed via GitHub |
+| **Relayer** | Render (Cloud) | Auto-deployed via GitHub + Keep-Alive via cron-job.org |
 
 - **Arc Explorer**: [testnet.arcscan.app](https://testnet.arcscan.app)
 - **GenLayer Explorer**: [studio.genlayer.com](https://studio.genlayer.com)
