@@ -298,10 +298,13 @@ async function startRelayer() {
   // Build the gallery index first
   await buildIndex();
 
-  // Then start watching for ALL events
+  // Then start watching for ALL events (slow polling to avoid rate limits)
   arcPublic.watchContractEvent({
     address: FLOWFI_ARC_ADDRESS,
     abi: FLOWFI_EVENTS_ABI,
+    poll: true,
+    pollingInterval: 30000, // Poll every 30 seconds to bypass IP rate limits
+
     onLogs: (logs) => {
       for (const log of logs) {
         if (!log.args) continue;
