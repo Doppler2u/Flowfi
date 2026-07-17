@@ -169,32 +169,55 @@ export default function Home() {
 
           </div>
         ) : (
-          <main className="mt-6 pb-12 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left column */}
-              <div className="flex flex-col gap-6 h-full lg:order-1">
-                <DepositWithdrawPanel />
-                <ActivityLog />
-              </div>
-
-              {/* Middle column */}
-              <div className="flex flex-col gap-6 h-full lg:order-2">
-                <ContentMarketplace />
-              </div>
-
-              {/* Right column */}
-              <div className="flex flex-col gap-6 h-full lg:order-3">
-                <CreatorPanel />
-              </div>
-            </div>
-            
-            {/* Full-width Bottom Row - App Kit Bridge */}
-            <div className="w-full pt-4">
-              <AppKitBridge />
-            </div>
-          </main>
+          <ConnectedDashboard />
         )}
       </div>
     </div>
+  );
+}
+
+function ConnectedDashboard() {
+  const [activeTab, setActiveTab] = React.useState<"marketplace" | "wallet">("marketplace");
+
+  return (
+    <main className="mt-6 pb-12 space-y-6">
+      {/* Tab Navigation */}
+      <div className="flex border-2 border-[var(--border-main)] w-fit">
+        <button
+          onClick={() => setActiveTab("marketplace")}
+          className={`px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "marketplace" ? "bg-[#00FF87] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+        >
+          Marketplace
+        </button>
+        <button
+          onClick={() => setActiveTab("wallet")}
+          className={`px-6 py-3 text-xs font-black uppercase tracking-widest border-l-2 border-[var(--border-main)] transition-all ${activeTab === "wallet" ? "bg-[#00FF87] text-black" : "text-[var(--text-dim)] hover:text-[var(--text-main)]"}`}
+        >
+          Wallet & Activity
+        </button>
+      </div>
+
+      {/* Content Area */}
+      {activeTab === "marketplace" ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 flex flex-col gap-6 h-[800px]">
+            <ContentMarketplace />
+          </div>
+          <div className="lg:col-span-1 flex flex-col gap-6 h-[800px]">
+            <CreatorPanel />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
+          <div className="flex flex-col gap-6 h-[800px]">
+            <DepositWithdrawPanel />
+            <ActivityLog />
+          </div>
+          <div className="flex flex-col gap-6">
+            <AppKitBridge />
+          </div>
+        </div>
+      )}
+    </main>
   );
 }
