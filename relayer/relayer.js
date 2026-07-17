@@ -20,7 +20,7 @@ const POLL_INTERVAL_MS      = 5000;
 const MAX_WAIT_MS           = 900000; 
 
 // Indexer Config
-const DEPLOYMENT_BLOCK      = 52000000n;
+const DEPLOYMENT_BLOCK      = 52220000n; // Moved much closer to current block to avoid IP rate limits on Render
 const CHUNK_SIZE            = 2000n;
 
 if (!PRIVATE_KEY || !FLOWFI_ARC_ADDRESS || !ARBITER_GL_ADDRESS) {
@@ -164,8 +164,8 @@ async function buildIndex() {
       break;
     }
 
-    // Polite delay for public RPC
-    await new Promise(r => setTimeout(r, 500));
+    // Polite delay for public RPC - 2 seconds to heavily respect Render shared IP limits
+    await new Promise(r => setTimeout(r, 2000));
     currentTo = chunkFrom;
   }
   
